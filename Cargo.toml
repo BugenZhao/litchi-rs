@@ -1,2 +1,8 @@
 [workspace]
-members = ["litchi-boot"]
+members = ["litchi-boot", "litchi-kernel"]
+
+[profile.dev]
+panic = "abort"
+
+[profile.release]
+panic = "abort"

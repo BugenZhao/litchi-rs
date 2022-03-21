@@ -1,12 +1,9 @@
 [package]
-name = "litchi-boot"
+name = "litchi-kernel"
 version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-uefi = "0.15"
-uefi-services = "0.12"
-log = "0.4"
 x86_64 = "0.14"
