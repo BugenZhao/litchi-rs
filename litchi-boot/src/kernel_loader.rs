@@ -1,0 +1,109 @@
+use itertools::{EitherOrBoth, Itertools};
+use log::info;
+use x86_64::{
+    structures::paging::{
+        FrameAllocator, Mapper, OffsetPageTable, Page, PageSize, PageTableFlags, PhysFrame,
+        Size4KiB,
+    },
+    PhysAddr, VirtAddr,
+};
+use xmas_elf::{program, ElfFile};
+
+pub type KernelEntry = *const extern "C" fn() -> !;
+
+pub struct KernelLoader<'a, A> {
+    elf: ElfFile<'static>,
+
+    page_table: OffsetPageTable<'static>,
+
+    allocator: &'a mut A,
+}
+
+impl<'a, A> KernelLoader<'a, A>
+where
+    A: FrameAllocator<Size4KiB>,
+{
+    pub fn new(input: &'static [u8], allocator: &'a mut A) -> Self {
+        // UEFI maps vmem with a zero offset.
+        let page_table = unsafe {
+            let frame = allocate_zeroed_frame(allocator);
+            let p4_table = &mut *(frame.start_address().as_u64() as *mut _);
+            OffsetPageTable::new(p4_table, VirtAddr::zero())
+        };
+
+        let elf = ElfFile::new(input).expect("failed to parse elf");
+
+        Self {
+            elf,
+            page_table,
+            allocator,
+        }
+    }
+
+    pub fn load(mut self) -> KernelEntry {
+        let file_base = PhysAddr::new(self.elf.input.as_ptr() as u64);
+
+        for segment in self
+            .elf
+            .program_iter()
+            .filter(|p| p.get_type().expect("bad type") == program::Type::Load && p.mem_size() > 0)
+        {
+            info!("begin to map segment {:x?}", segment);
+
+            // TODO: use correct flags
+            let flags = PageTableFlags::PRESENT | PageTableFlags::WRITABLE;
+
+            let file_start = file_base + segment.offset();
+            let file_end = file_start + segment.file_size();
+
+            let mem_start = VirtAddr::new(segment.virtual_addr());
+            let mem_end = mem_start + segment.mem_size();
+
+            let start_page = Page::<Size4KiB>::containing_address(mem_start);
+            let end_page = Page::containing_address(mem_end - 1u64);
+
+            let start_frame = PhysFrame::containing_address(file_start);
+            let end_frame = PhysFrame::containing_address(file_end - 1u64);
+
+            for pair in Page::range_inclusive(start_page, end_page)
+                .zip_longest(PhysFrame::range_inclusive(start_frame, end_frame))
+            {
+                let (page, frame) = match pair {
+                    EitherOrBoth::Both(page, frame) => (page, frame),
+                    EitherOrBoth::Left(page) => {
+                        let frame = allocate_zeroed_frame(self.allocator);
+                        (page, frame)
+                    }
+                    EitherOrBoth::Right(_frame) => break,
+                };
+
+                unsafe {
+                    self.page_table
+                        .map_to(page, frame, flags, self.allocator)
+                        .expect("failed to map page")
+                        .flush();
+
+                    info!("mapped {:?} to {:?}", page, frame);
+                }
+            }
+
+            info!("mapped this segment")
+        }
+
+        let entry_point = self.elf.header.pt2.entry_point();
+        info!("entry point at 0x{:x}", self.elf.header.pt2.entry_point());
+
+        entry_point as KernelEntry
+    }
+}
+
+fn allocate_zeroed_frame(allocator: &mut impl FrameAllocator<Size4KiB>) -> PhysFrame<Size4KiB> {
+    let frame = allocator
+        .allocate_frame()
+        .expect("failed to allocate frame");
+    let ptr = frame.start_address().as_u64() as *mut u8;
+    unsafe {
+        core::ptr::write_bytes(ptr, 0, Size4KiB::SIZE as usize);
+    }
+    frame
+}
