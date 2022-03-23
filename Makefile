@@ -16,6 +16,7 @@ qemu: efi/QEMU_EFI.fd efi/EFI/BOOT/BOOTX64.efi
 	rm -f efi/NvVars
 	qemu-system-x86_64 \
 		-m 256M \
+		-gdb tcp::1234 \
 		-nographic \
 		-bios efi/QEMU_EFI.fd \
 		-drive format=raw,file=fat:rw:./efi/ \

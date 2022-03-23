@@ -3,7 +3,7 @@ use log::info;
 use x86_64::{
     structures::paging::{
         FrameAllocator, Mapper, OffsetPageTable, Page, PageSize, PageTableFlags, PhysFrame,
-        Size4KiB,
+        Size1GiB, Size4KiB,
     },
     PhysAddr, VirtAddr,
 };
@@ -40,7 +40,7 @@ where
         }
     }
 
-    pub fn load(mut self) -> KernelEntry {
+    pub fn load(mut self) -> (OffsetPageTable<'static>, VirtAddr, KernelEntry) {
         let file_base = PhysAddr::new(self.elf.input.as_ptr() as u64);
 
         for segment in self
@@ -93,7 +93,48 @@ where
         let entry_point = self.elf.header.pt2.entry_point();
         info!("entry point at 0x{:x}", self.elf.header.pt2.entry_point());
 
-        entry_point as KernelEntry
+        for page in Page::<Size1GiB>::range_inclusive(
+            Page::containing_address(VirtAddr::zero()),
+            Page::containing_address(VirtAddr::new(0xffffffff)),
+        ) {
+            let frame = PhysFrame::from_start_address(PhysAddr::new(page.start_address().as_u64()))
+                .unwrap();
+
+            let flags = PageTableFlags::PRESENT | PageTableFlags::WRITABLE;
+
+            unsafe {
+                self.page_table
+                    .map_to(page, frame, flags, self.allocator)
+                    .expect("failed to map page")
+                    .flush();
+
+                info!("mapped {:?} to {:?}", page, frame);
+            }
+        }
+
+        let kernel_stack_top = VirtAddr::new(0x666700000000u64);
+        let stack_page = Page::containing_address(kernel_stack_top);
+        for i in 0..20 {
+            let page = stack_page - i;
+            let frame = allocate_zeroed_frame(self.allocator);
+
+            let flags = PageTableFlags::PRESENT | PageTableFlags::WRITABLE;
+
+            unsafe {
+                self.page_table
+                    .map_to(page, frame, flags, self.allocator)
+                    .expect("failed to map page")
+                    .flush();
+
+                info!("mapped {:?} to {:?}", page, frame);
+            }
+        }
+
+        (
+            self.page_table,
+            kernel_stack_top,
+            entry_point as KernelEntry,
+        )
     }
 }
 
