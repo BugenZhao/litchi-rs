@@ -74,7 +74,9 @@ pub fn init() {
         LOCAL_APIC.lock().enable();
     }
     info!("enabled apic with timer");
+}
 
+pub fn enable() {
     instructions::interrupts::enable();
     info!("enabled interrupts");
 }

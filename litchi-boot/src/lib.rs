@@ -16,6 +16,8 @@ pub struct BootInfo {
 
     pub system_table: SystemTable<Runtime>,
 
+    pub phys_offset: VirtAddr,
+
     pub memory_descriptors: Vec<&'static MemoryDescriptor>,
 }
 
@@ -62,6 +64,7 @@ impl Debug for BootInfo {
         f.debug_struct("BootInfo")
             .field("name", &self.name)
             .field("kernel_stack_top", &self.kernel_stack_top)
+            .field("phys_offset", &self.phys_offset)
             .field("usable_memory", &UsableMemory(self.usable_memory()))
             .finish_non_exhaustive()
     }

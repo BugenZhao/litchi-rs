@@ -14,7 +14,7 @@ use uefi::{prelude::*, proto::console::text::Color};
 use x86_64::{
     registers::control::{Cr3, Cr3Flags},
     structures::paging::PhysFrame,
-    PhysAddr,
+    PhysAddr, VirtAddr,
 };
 
 use crate::{frame_allocator::BootFrameAllocator, kernel_loader::KernelLoader};
@@ -82,6 +82,7 @@ fn efi_main(handle: Handle, mut system_table: SystemTable<Boot>) -> Status {
         name: "litchi",
         kernel_stack_top,
         system_table,
+        phys_offset: VirtAddr::zero(),
         memory_descriptors,
     };
 

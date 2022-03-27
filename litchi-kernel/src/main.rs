@@ -2,7 +2,9 @@
 #![no_main]
 #![feature(default_alloc_error_handler)]
 #![feature(abi_x86_interrupt)]
+#![feature(type_alias_impl_trait)]
 
+mod frame_allocator;
 mod gdt;
 mod interrupts;
 mod qemu;
@@ -17,17 +19,34 @@ use x86_64::instructions;
 
 use crate::qemu::{exit, ExitCode};
 
-static mut TEST_BSS: &mut [u8] = &mut [0; 10000];
-
 static BOOT_INFO: Once<&'static BootInfo> = Once::new();
 
 #[allow(unreachable_code)]
 #[no_mangle]
 pub extern "C" fn kernel_main(boot_info: *const BootInfo) {
-    let a = &mut [1, 2, 3];
-    for i in a.iter_mut() {
-        *i += 1;
+    serial_log::init().expect("failed to init serial logger");
+    info!("Hello, the Litchi kernel!");
+
+    BOOT_INFO.call_once(|| unsafe { &(*boot_info) });
+    info!("boot info: {:#?}", BOOT_INFO.get().unwrap());
+
+    memory_check();
+
+    gdt::init();
+    interrupts::init();
+    frame_allocator::init();
+
+    interrupts::enable();
+    instructions::interrupts::int3();
+    loop {
+        instructions::hlt();
     }
+
+    exit(ExitCode::Success);
+}
+
+fn memory_check() {
+    static mut TEST_BSS: &mut [u8] = &mut [0; 10000];
 
     unsafe {
         for byte in TEST_BSS.iter_mut() {
@@ -35,22 +54,6 @@ pub extern "C" fn kernel_main(boot_info: *const BootInfo) {
             *byte = 233;
         }
     }
-
-    serial_log::init().expect("failed to init serial logger");
-    info!("Hello, the Litchi kernel!");
-
-    BOOT_INFO.call_once(|| unsafe { &(*boot_info) });
-    info!("boot info: {:#?}", BOOT_INFO.get().unwrap());
-
-    gdt::init();
-    interrupts::init();
-    instructions::interrupts::int3();
-
-    loop {
-        instructions::hlt();
-    }
-
-    exit(ExitCode::Success);
 }
 
 #[panic_handler]
