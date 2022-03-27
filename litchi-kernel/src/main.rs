@@ -1,7 +1,9 @@
 #![no_std]
 #![no_main]
 #![feature(default_alloc_error_handler)]
+#![feature(abi_x86_interrupt)]
 
+mod interrupts;
 mod qemu;
 mod serial_logger;
 
@@ -10,6 +12,7 @@ use core::panic::PanicInfo;
 use litchi_boot::BootInfo;
 use log::{error, info};
 use spin::Once;
+use x86_64::instructions;
 
 use crate::qemu::{exit, ExitCode};
 
@@ -36,6 +39,9 @@ pub extern "C" fn kernel_main(boot_info: *const BootInfo) {
 
     BOOT_INFO.call_once(|| unsafe { &(*boot_info) });
     info!("boot info: {:#?}", BOOT_INFO.get().unwrap());
+
+    interrupts::init();
+    instructions::interrupts::int3();
 
     exit(ExitCode::Success);
 }

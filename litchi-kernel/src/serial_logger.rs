@@ -2,6 +2,7 @@ use lazy_static::lazy_static;
 use log::SetLoggerError;
 use spin::Mutex;
 use uart_16550::SerialPort;
+use x86_64::instructions;
 
 lazy_static! {
     pub static ref DEBUG_SERIAL: Mutex<SerialPort> = {
@@ -13,10 +14,13 @@ lazy_static! {
 
 pub fn _print(args: ::core::fmt::Arguments) {
     use core::fmt::Write;
-    DEBUG_SERIAL
-        .lock()
-        .write_fmt(args)
-        .expect("printing to debug serial failed");
+
+    instructions::interrupts::without_interrupts(|| {
+        DEBUG_SERIAL
+            .lock()
+            .write_fmt(args)
+            .expect("printing to debug serial failed")
+    })
 }
 
 /// Prints to the host through the serial interface.
