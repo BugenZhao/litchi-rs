@@ -7,7 +7,7 @@ use x86_64::{
 
 use crate::BOOT_INFO;
 
-static PAGE_TABLE: Once<Mutex<OffsetPageTable>> = Once::new();
+pub static PAGE_TABLE: Once<Mutex<OffsetPageTable>> = Once::new();
 
 pub fn init() {
     let boot_info = BOOT_INFO.get().expect("boot info not set");

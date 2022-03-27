@@ -16,7 +16,7 @@ fn extract_iter_from_boot_info(boot_info: &'static BootInfo) -> UsableFrameItera
             .expect("phys frame not aligned");
         let end = start + desc.page_count;
 
-        PhysFrame::<Size4KiB>::range(start, end).into_iter()
+        PhysFrame::<Size4KiB>::range(start, end)
     })
 }
 
@@ -38,7 +38,7 @@ unsafe impl FrameAllocator<Size4KiB> for BootInfoFrameAllocator {
     }
 }
 
-static FRAME_ALLOCATOR: Once<Mutex<BootInfoFrameAllocator>> = Once::new();
+pub static FRAME_ALLOCATOR: Once<Mutex<BootInfoFrameAllocator>> = Once::new();
 
 pub fn init() {
     let boot_info = BOOT_INFO.get().expect("boot info not set");

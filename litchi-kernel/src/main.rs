@@ -3,6 +3,7 @@
 #![feature(default_alloc_error_handler)]
 #![feature(abi_x86_interrupt)]
 #![feature(type_alias_impl_trait)]
+#![feature(type_name_of_val)]
 
 extern crate alloc;
 
@@ -28,21 +29,29 @@ static BOOT_INFO: Once<&'static BootInfo> = Once::new();
 #[allow(unreachable_code)]
 #[no_mangle]
 pub extern "C" fn kernel_main(boot_info: *const BootInfo) {
+    // Initialize serial logger
     serial_log::init();
     info!("Hello, the Litchi kernel!");
 
+    // Store the global boot info
     BOOT_INFO.call_once(|| unsafe { &(*boot_info) });
     info!("boot info: {:#?}", BOOT_INFO.get().unwrap());
 
+    // Check BSS
     memory_check();
 
+    // Initialize functionalities
     gdt::init();
     interrupts::init();
     frame_allocator::init();
     memory::init();
+    allocator::init();
 
+    // Test interrupts
     interrupts::enable();
     instructions::interrupts::int3();
+
+    // Idle
     loop {
         instructions::hlt();
     }
