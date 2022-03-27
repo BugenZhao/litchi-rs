@@ -7,5 +7,5 @@ build-std-features = ["compiler-builtins-mem"]
 
 [target.x86_64-unknown-litchi]
 rustflags = [
-    "-Clink-arg=--image-base=0x233300000000"
+    "-Clink-arg=--image-base=0x233300000000", "-Clink-arg=--entry=kernel_main"
 ]

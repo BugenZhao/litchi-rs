@@ -38,7 +38,7 @@ fn efi_main(handle: Handle, mut system_table: SystemTable<Boot>) -> Status {
         .set_color(Color::Magenta, Color::Black)
         .expect("failed to set color");
 
-    info!("Hello, litchi boot!");
+    info!("Hello, the Litchi bootloader!");
 
     let mut allocator = BootFrameAllocator::new(system_table.boot_services());
     let kernel_loader = KernelLoader::new(KERNEL_ELF_BYTES, &mut allocator);
@@ -54,12 +54,17 @@ fn efi_main(handle: Handle, mut system_table: SystemTable<Boot>) -> Status {
             Cr3Flags::empty(),
         );
     }
-
     info!("loaded kernel page table");
+
+    system_table
+        .stdout()
+        .set_color(Color::Yellow, Color::Black)
+        .expect("failed to set color");
 
     let mmap_size = system_table.boot_services().memory_map_size().map_size;
     let mmap_buf = vec![0u8; mmap_size * 2].leak();
 
+    info!("exit boot services & call the kernel entry");
     uefi::alloc::exit_boot_services();
     let (_system_table, _iter) = system_table
         .exit_boot_services(handle, mmap_buf)

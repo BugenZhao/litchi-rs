@@ -1,15 +1,16 @@
 #![no_std]
 #![no_main]
 
+mod serial_logger;
+
 use core::panic::PanicInfo;
 
-static mut TEST_BSS: &mut [u8] = &mut [0; 4096];
+use log::{error, info};
+
+static mut TEST_BSS: &mut [u8] = &mut [0; 10000];
 
 #[no_mangle]
-pub extern "C" fn _start() -> ! {
-    // this function is the entry point, since the linker looks for a function
-    // named `_start` by default
-
+pub extern "C" fn kernel_main() -> ! {
     let a = &mut [1, 2, 3];
     for i in a.iter_mut() {
         *i += 1;
@@ -17,19 +18,24 @@ pub extern "C" fn _start() -> ! {
 
     unsafe {
         for byte in TEST_BSS.iter_mut() {
-            if *byte != 0 {
-                loop {}
-            }
+            assert_eq!(*byte, 0, "bss check failed");
             *byte = 233;
         }
     }
 
+    serial_logger::init().expect("failed to init serial logger");
+    info!("Hello, the Litchi kernel!");
+
+    panic!("try to panic");
+
+    #[allow(unreachable_code)]
     loop {
         x86_64::instructions::hlt();
     }
 }
 
 #[panic_handler]
-fn panic(_info: &PanicInfo) -> ! {
+fn panic(info: &PanicInfo) -> ! {
+    error!("{}", info);
     loop {}
 }
