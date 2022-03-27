@@ -10,6 +10,7 @@ mod allocator;
 mod frame_allocator;
 mod gdt;
 mod interrupts;
+mod memory;
 mod qemu;
 mod serial_log;
 
@@ -27,7 +28,7 @@ static BOOT_INFO: Once<&'static BootInfo> = Once::new();
 #[allow(unreachable_code)]
 #[no_mangle]
 pub extern "C" fn kernel_main(boot_info: *const BootInfo) {
-    serial_log::init().expect("failed to init serial logger");
+    serial_log::init();
     info!("Hello, the Litchi kernel!");
 
     BOOT_INFO.call_once(|| unsafe { &(*boot_info) });
@@ -38,6 +39,7 @@ pub extern "C" fn kernel_main(boot_info: *const BootInfo) {
     gdt::init();
     interrupts::init();
     frame_allocator::init();
+    memory::init();
 
     interrupts::enable();
     instructions::interrupts::int3();

@@ -1,5 +1,4 @@
 use lazy_static::lazy_static;
-use log::SetLoggerError;
 use spin::Mutex;
 use uart_16550::SerialPort;
 use x86_64::instructions;
@@ -67,8 +66,7 @@ impl log::Log for SerialLogger {
     fn flush(&self) {}
 }
 
-pub fn init() -> Result<(), SetLoggerError> {
-    log::set_logger(&LOGGER)?;
+pub fn init() {
+    log::set_logger(&LOGGER).expect("failed to init serial logger");
     log::set_max_level(log::LevelFilter::Debug);
-    Ok(())
 }
