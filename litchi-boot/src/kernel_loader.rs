@@ -9,7 +9,7 @@ use x86_64::{
     },
     PhysAddr, VirtAddr,
 };
-use xmas_elf::{program, ElfFile};
+use xmas_elf::{header, program, ElfFile};
 
 pub type KernelEntry = *const extern "C" fn() -> !;
 
@@ -34,11 +34,18 @@ where
         };
 
         let elf = ElfFile::new(input).expect("failed to parse elf");
+        Self::check_dynamic(&elf);
 
         Self {
             elf,
             page_table,
             allocator,
+        }
+    }
+
+    fn check_dynamic(elf: &ElfFile) {
+        if elf.header.pt2.type_().as_type() == header::Type::SharedObject {
+            unimplemented!("loading a shared object / pie executable is not supported");
         }
     }
 

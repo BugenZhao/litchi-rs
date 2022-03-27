@@ -10,7 +10,7 @@ build:
 
 efi/EFI/BOOT/BOOTX64.efi: build
 	@mkdir -p efi/EFI/BOOT
-	cp target/x86_64-unknown-uefi-debug/debug/litchi-boot.efi efi/EFI/BOOT/BOOTX64.efi
+	cp target/x86_64-unknown-uefi/debug/litchi-boot.efi efi/EFI/BOOT/BOOTX64.efi
 
 qemu: efi/QEMU_EFI.fd efi/EFI/BOOT/BOOTX64.efi
 	rm -f efi/NvVars

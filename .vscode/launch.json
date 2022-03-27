@@ -8,7 +8,7 @@
             "name": "Attach to bootloader",
             "type": "lldb",
             "request": "custom",
-            "targetCreateCommands": ["target create ${workspaceFolder}/target/x86_64-unknown-uefi-debug/debug/litchi-boot.efi"],
+            "targetCreateCommands": ["target create ${workspaceFolder}/target/x86_64-unknown-uefi/debug/litchi-boot.efi"],
             "processCreateCommands": ["gdb-remote localhost:1234"]
         },
         {
