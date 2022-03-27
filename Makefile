@@ -21,7 +21,12 @@ qemu: efi/QEMU_EFI.fd efi/EFI/BOOT/BOOTX64.efi
 		-bios efi/QEMU_EFI.fd \
 		-drive format=raw,file=fat:rw:./efi/ \
 		-device isa-debug-exit,iobase=0xf4,iosize=0x04 \
+		-serial stdio \
+		-monitor none \
 	; ([ $$? -eq 33 ] && echo "Success") || exit 1
+
+kill:
+	killall qemu-system-x86_64
 
 clean:
 	cargo clean

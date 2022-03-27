@@ -6,7 +6,7 @@
 mod gdt;
 mod interrupts;
 mod qemu;
-mod serial_logger;
+mod serial_log;
 
 use core::panic::PanicInfo;
 
@@ -36,7 +36,7 @@ pub extern "C" fn kernel_main(boot_info: *const BootInfo) {
         }
     }
 
-    serial_logger::init().expect("failed to init serial logger");
+    serial_log::init().expect("failed to init serial logger");
     info!("Hello, the Litchi kernel!");
 
     BOOT_INFO.call_once(|| unsafe { &(*boot_info) });

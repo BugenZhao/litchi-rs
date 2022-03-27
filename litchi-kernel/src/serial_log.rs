@@ -5,11 +5,15 @@ use uart_16550::SerialPort;
 use x86_64::instructions;
 
 lazy_static! {
-    pub static ref DEBUG_SERIAL: Mutex<SerialPort> = {
-        let mut serial_port = unsafe { SerialPort::new(0x3f8) };
-        serial_port.init();
-        Mutex::new(serial_port)
-    };
+    pub static ref DEBUG_SERIAL: Mutex<SerialPort> = Mutex::new(new_debug_serial());
+}
+
+fn new_debug_serial() -> SerialPort {
+    let base = 0x3f8; // COM1
+    let mut serial_port = unsafe { SerialPort::new(base) };
+    serial_port.init();
+
+    serial_port
 }
 
 pub fn _print(args: ::core::fmt::Arguments) {
@@ -27,7 +31,7 @@ pub fn _print(args: ::core::fmt::Arguments) {
 #[macro_export]
 macro_rules! print {
     ($($arg:tt)*) => {
-        $crate::serial_logger::_print(format_args!($($arg)*))
+        $crate::serial_log::_print(format_args!($($arg)*))
     };
 }
 
