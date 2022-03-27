@@ -64,6 +64,7 @@ pub fn init() {
 
     unsafe {
         registers::segmentation::CS::set_reg(GDT.kernel_code_selector);
+        registers::segmentation::SS::set_reg(SegmentSelector(0)); // important
         instructions::tables::load_tss(GDT.kernel_tss_selector);
     }
 

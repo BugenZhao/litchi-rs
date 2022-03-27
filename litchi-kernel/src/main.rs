@@ -21,6 +21,7 @@ static mut TEST_BSS: &mut [u8] = &mut [0; 10000];
 
 static BOOT_INFO: Once<&'static BootInfo> = Once::new();
 
+#[allow(unreachable_code)]
 #[no_mangle]
 pub extern "C" fn kernel_main(boot_info: *const BootInfo) {
     let a = &mut [1, 2, 3];
@@ -45,7 +46,9 @@ pub extern "C" fn kernel_main(boot_info: *const BootInfo) {
     interrupts::init();
     instructions::interrupts::int3();
 
-    stack_overflow();
+    loop {
+        instructions::hlt();
+    }
 
     exit(ExitCode::Success);
 }
@@ -57,6 +60,7 @@ fn panic(info: &PanicInfo) -> ! {
 }
 
 #[allow(unconditional_recursion)]
+#[allow(dead_code)]
 fn stack_overflow() {
     stack_overflow();
 }
