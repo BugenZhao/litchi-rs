@@ -52,7 +52,7 @@ pub unsafe fn map_to(page: Page, frame: PhysFrame, flags: PageTableFlags) {
     })
 }
 
-pub unsafe fn allocate_and_map_to(page: Page, flags: PageTableFlags) {
+pub unsafe fn allocate_and_map_to(page: Page, flags: PageTableFlags) -> PhysFrame {
     with_allocator_and_page_table(|frame_allocator, page_table| {
         let frame = frame_allocator.allocate_frame().expect("no enough memory");
 
@@ -60,5 +60,7 @@ pub unsafe fn allocate_and_map_to(page: Page, flags: PageTableFlags) {
             .map_to(page, frame, flags, &mut *frame_allocator)
             .expect("failed to map frame")
             .flush();
+
+        frame
     })
 }

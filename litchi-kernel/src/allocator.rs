@@ -2,7 +2,11 @@ use alloc::{
     alloc::{GlobalAlloc, Layout},
     vec::Vec,
 };
-use core::{any::type_name_of_val, ptr::null_mut};
+use core::{
+    any::type_name_of_val,
+    ptr::null_mut,
+    sync::atomic::{AtomicBool, Ordering},
+};
 use linked_list_allocator::LockedHeap;
 use log::info;
 use size_format::SizeFormatterBinary;
@@ -27,6 +31,8 @@ unsafe impl GlobalAlloc for Dummy {
 
 #[global_allocator]
 static ALLOCATOR: LockedHeap = LockedHeap::empty();
+
+static INITIALIZED: AtomicBool = AtomicBool::new(false);
 
 pub fn init() {
     const HEAP_BASE: VirtAddr = VirtAddr::new_truncate(0x4444_0000_0000);
@@ -54,6 +60,7 @@ pub fn init() {
             .lock()
             .init(HEAP_BASE.as_u64() as usize, HEAP_SIZE);
     }
+    INITIALIZED.store(true, Ordering::SeqCst);
 
     let test_vec = (0u16..).take(4096).collect::<Vec<_>>();
     assert!(test_vec.as_ptr() >= HEAP_BASE.as_ptr());
@@ -65,4 +72,8 @@ pub fn init() {
         "allocator of `{}` initialized",
         type_name_of_val(&ALLOCATOR)
     );
+}
+
+pub fn initialized() -> bool {
+    INITIALIZED.load(Ordering::SeqCst)
 }
