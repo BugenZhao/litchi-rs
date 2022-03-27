@@ -7,7 +7,8 @@ extern crate alloc;
 use core::arch::asm;
 
 use align_data::{include_aligned, Align4K};
-use alloc::vec;
+use alloc::vec::Vec;
+use litchi_boot::BootInfo;
 use log::info;
 use uefi::{prelude::*, proto::console::text::Color};
 use x86_64::{
@@ -62,18 +63,34 @@ fn efi_main(handle: Handle, mut system_table: SystemTable<Boot>) -> Status {
         .expect("failed to set color");
 
     let mmap_size = system_table.boot_services().memory_map_size().map_size;
-    let mmap_buf = vec![0u8; mmap_size * 2].leak();
+    let mmap_buf = alloc::vec![0u8; mmap_size * 2].leak();
+    let mut memory_descriptors = Vec::with_capacity(128);
 
     info!("exit boot services & call the kernel entry");
     uefi::alloc::exit_boot_services();
-    let (_system_table, _iter) = system_table
+    let (system_table, iter) = system_table
         .exit_boot_services(handle, mmap_buf)
         .expect("failed to exit boot services");
 
     // Note: we can not use log & alloc anymore.
+    for mem_desc in iter {
+        assert!(memory_descriptors.len() < memory_descriptors.capacity());
+        memory_descriptors.push(mem_desc);
+    }
+
+    let boot_info = BootInfo {
+        name: "litchi",
+        kernel_stack_top,
+        system_table,
+        memory_descriptors,
+    };
 
     unsafe {
-        asm!("mov rsp, {}; call {}", in(reg) kernel_stack_top.as_u64(), in(reg) kernel_entry);
+        asm!("mov rsp, {}; call {}",
+            in(reg) kernel_stack_top.as_u64(),
+            in(reg) kernel_entry,
+            in("rdi") &boot_info as *const _
+        );
     }
 
     Status::SUCCESS

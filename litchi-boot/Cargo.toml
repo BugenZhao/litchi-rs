@@ -8,6 +8,7 @@ edition = "2021"
 [dependencies]
 align-data = "0.1"
 itertools = { version = "0.10", default-features = false }
+size_format = "1.0"
 uefi = { version = "0.15", features = ["alloc"] }
 uefi-services = "0.12"
 log = "0.4"
