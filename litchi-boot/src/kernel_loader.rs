@@ -153,13 +153,19 @@ where
             }
         }
 
+        const KERNEL_STACK_PAGES: u64 = 21;
         let kernel_stack_top = VirtAddr::new(0x666700000000u64);
         let stack_page = Page::containing_address(kernel_stack_top);
-        for i in 0..20 {
+        for i in 0..KERNEL_STACK_PAGES {
             let page = stack_page - i;
             let frame = allocate_zeroed_frame(self.allocator);
 
-            let flags = PageTableFlags::PRESENT | PageTableFlags::WRITABLE;
+            let flags = if i == KERNEL_STACK_PAGES - 1 {
+                // Make the bottom page unwritable.
+                PageTableFlags::PRESENT
+            } else {
+                PageTableFlags::PRESENT | PageTableFlags::WRITABLE
+            };
 
             unsafe {
                 self.page_table
