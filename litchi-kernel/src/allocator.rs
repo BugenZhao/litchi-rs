@@ -7,11 +7,11 @@ use linked_list_allocator::LockedHeap;
 use log::info;
 use size_format::SizeFormatterBinary;
 use x86_64::{
-    structures::paging::{FrameAllocator, Page, PageSize, PageTableFlags, Size4KiB},
+    structures::paging::{Page, PageSize, PageTableFlags, Size4KiB},
     VirtAddr,
 };
 
-use crate::{frame_allocator::FRAME_ALLOCATOR, memory::map_to};
+use crate::memory::allocate_and_map_to;
 
 struct Dummy;
 
@@ -35,17 +35,11 @@ pub fn init() {
 
     let heap_base_page = Page::from_start_address(HEAP_BASE).unwrap();
     for i in 0..HEAP_PAGES {
-        let frame = FRAME_ALLOCATOR
-            .get()
-            .expect("frame allocator not initialized")
-            .lock()
-            .allocate_frame()
-            .expect("no enough memory for heap");
         let page = heap_base_page + i as u64;
         let flags = PageTableFlags::PRESENT | PageTableFlags::WRITABLE;
 
         unsafe {
-            map_to(page, frame, flags);
+            allocate_and_map_to(page, flags);
         }
     }
 

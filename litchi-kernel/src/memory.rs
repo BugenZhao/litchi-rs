@@ -1,11 +1,16 @@
 use log::info;
 use spin::{Mutex, Once};
 use x86_64::{
-    registers,
-    structures::paging::{Mapper, OffsetPageTable, Page, PageTable, PageTableFlags, PhysFrame},
+    instructions, registers,
+    structures::paging::{
+        FrameAllocator, Mapper, OffsetPageTable, Page, PageTable, PageTableFlags, PhysFrame,
+    },
 };
 
-use crate::{frame_allocator::FRAME_ALLOCATOR, BOOT_INFO};
+use crate::{
+    frame_allocator::{BootInfoFrameAllocator, FRAME_ALLOCATOR},
+    BOOT_INFO,
+};
 
 pub static PAGE_TABLE: Once<Mutex<OffsetPageTable>> = Once::new();
 
@@ -23,15 +28,37 @@ pub fn init() {
     info!("prepared page table")
 }
 
-pub unsafe fn map_to(page: Page, frame: PhysFrame, flags: PageTableFlags) {
-    let mut frame_allocator = FRAME_ALLOCATOR
-        .get()
-        .expect("frame allocator not initialized")
-        .lock();
-    let mut page_table = PAGE_TABLE.get().expect("page table not initialized").lock();
+pub fn with_allocator_and_page_table<F, R>(f: F) -> R
+where
+    F: FnOnce(&mut BootInfoFrameAllocator, &mut OffsetPageTable) -> R,
+{
+    instructions::interrupts::without_interrupts(|| {
+        let mut frame_allocator = FRAME_ALLOCATOR
+            .get()
+            .expect("frame allocator not initialized")
+            .lock();
+        let mut page_table = PAGE_TABLE.get().expect("page table not initialized").lock();
 
-    page_table
-        .map_to(page, frame, flags, &mut *frame_allocator)
-        .expect("failed to map heap frame")
-        .flush();
+        f(&mut *frame_allocator, &mut *page_table)
+    })
+}
+
+pub unsafe fn map_to(page: Page, frame: PhysFrame, flags: PageTableFlags) {
+    with_allocator_and_page_table(|frame_allocator, page_table| {
+        page_table
+            .map_to(page, frame, flags, &mut *frame_allocator)
+            .expect("failed to map frame")
+            .flush();
+    })
+}
+
+pub unsafe fn allocate_and_map_to(page: Page, flags: PageTableFlags) {
+    with_allocator_and_page_table(|frame_allocator, page_table| {
+        let frame = frame_allocator.allocate_frame().expect("no enough memory");
+
+        page_table
+            .map_to(page, frame, flags, &mut *frame_allocator)
+            .expect("failed to map frame")
+            .flush();
+    })
 }
