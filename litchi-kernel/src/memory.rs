@@ -2,10 +2,10 @@ use log::info;
 use spin::{Mutex, Once};
 use x86_64::{
     registers,
-    structures::paging::{OffsetPageTable, PageTable},
+    structures::paging::{Mapper, OffsetPageTable, Page, PageTable, PageTableFlags, PhysFrame},
 };
 
-use crate::BOOT_INFO;
+use crate::{frame_allocator::FRAME_ALLOCATOR, BOOT_INFO};
 
 pub static PAGE_TABLE: Once<Mutex<OffsetPageTable>> = Once::new();
 
@@ -21,4 +21,17 @@ pub fn init() {
     });
 
     info!("prepared page table")
+}
+
+pub unsafe fn map_to(page: Page, frame: PhysFrame, flags: PageTableFlags) {
+    let mut frame_allocator = FRAME_ALLOCATOR
+        .get()
+        .expect("frame allocator not initialized")
+        .lock();
+    let mut page_table = PAGE_TABLE.get().expect("page table not initialized").lock();
+
+    page_table
+        .map_to(page, frame, flags, &mut *frame_allocator)
+        .expect("failed to map heap frame")
+        .flush();
 }

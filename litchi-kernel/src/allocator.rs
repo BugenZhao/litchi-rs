@@ -7,11 +7,11 @@ use linked_list_allocator::LockedHeap;
 use log::info;
 use size_format::SizeFormatterBinary;
 use x86_64::{
-    structures::paging::{FrameAllocator, Mapper, Page, PageSize, PageTableFlags, Size4KiB},
+    structures::paging::{FrameAllocator, Page, PageSize, PageTableFlags, Size4KiB},
     VirtAddr,
 };
 
-use crate::{frame_allocator::FRAME_ALLOCATOR, memory::PAGE_TABLE};
+use crate::{frame_allocator::FRAME_ALLOCATOR, memory::map_to};
 
 struct Dummy;
 
@@ -33,25 +33,19 @@ pub fn init() {
     const HEAP_PAGES: usize = 8192; // 32 MiB
     const HEAP_SIZE: usize = HEAP_PAGES * (Size4KiB::SIZE as usize);
 
-    let mut frame_allocator = FRAME_ALLOCATOR
-        .get()
-        .expect("frame allocator not initialized")
-        .lock();
-    let mut page_table = PAGE_TABLE.get().expect("page table not initialized").lock();
-
     let heap_base_page = Page::from_start_address(HEAP_BASE).unwrap();
     for i in 0..HEAP_PAGES {
-        let frame = frame_allocator
+        let frame = FRAME_ALLOCATOR
+            .get()
+            .expect("frame allocator not initialized")
+            .lock()
             .allocate_frame()
-            .expect("not enough memory for heap");
+            .expect("no enough memory for heap");
         let page = heap_base_page + i as u64;
         let flags = PageTableFlags::PRESENT | PageTableFlags::WRITABLE;
 
         unsafe {
-            page_table
-                .map_to(page, frame, flags, &mut *frame_allocator)
-                .expect("failed to map heap frame")
-                .flush();
+            map_to(page, frame, flags);
         }
     }
 
@@ -73,5 +67,8 @@ pub fn init() {
         assert_eq!(i as u16, num);
     }
 
-    info!("allocator of `{}` initialized", type_name_of_val(&ALLOCATOR));
+    info!(
+        "allocator of `{}` initialized",
+        type_name_of_val(&ALLOCATOR)
+    );
 }

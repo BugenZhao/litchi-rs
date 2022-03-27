@@ -3,10 +3,20 @@ use core::ops::Deref;
 use lazy_static::lazy_static;
 use log::info;
 use spin::Mutex;
-use x2apic::lapic::{self, LocalApic};
-use x86_64::{instructions, structures::idt::InterruptDescriptorTable};
+use x2apic::{
+    ioapic::{IoApic, IrqFlags, IrqMode, RedirectionTableEntry},
+    lapic::{self, LocalApic},
+};
+use x86_64::{
+    instructions,
+    structures::{
+        idt::InterruptDescriptorTable,
+        paging::{Page, PageTableFlags, PhysFrame},
+    },
+    PhysAddr, VirtAddr,
+};
 
-use crate::gdt::DOUBLE_FAULT_IST_INDEX;
+use crate::{gdt::DOUBLE_FAULT_IST_INDEX, memory::map_to};
 
 lazy_static! {
     static ref IDT: InterruptDescriptorTable = new_idt();
@@ -28,12 +38,16 @@ fn new_idt() -> InterruptDescriptorTable {
     }
 
     // APIC Timer
-    idt[UserInterrupt::ApicTimer as u8 as usize].set_handler_fn(apic_timer);
+    idt[UserInterrupt::ApicTimer.as_index()].set_handler_fn(apic_timer);
+
+    // Serial
+    idt[UserInterrupt::Serial.as_index()].set_handler_fn(serial);
 
     idt
 }
 
 pub const USER_INTERRUPT_OFFSET: u8 = 32;
+pub const IO_APIC_INTERRUPT_OFFSET: u8 = 128;
 
 #[derive(Debug, Clone, Copy)]
 #[repr(u8)]
@@ -41,11 +55,17 @@ pub enum UserInterrupt {
     ApicTimer = USER_INTERRUPT_OFFSET,
     ApicError = USER_INTERRUPT_OFFSET + 19,
     ApicSpurious = USER_INTERRUPT_OFFSET + 31,
+
+    Serial = IO_APIC_INTERRUPT_OFFSET + 4,
 }
 
 impl UserInterrupt {
     fn as_index(self) -> usize {
         self as u8 as _
+    }
+
+    fn irq_number(self) -> u8 {
+        self as u8 - IO_APIC_INTERRUPT_OFFSET
     }
 }
 
@@ -74,6 +94,33 @@ pub fn init() {
         LOCAL_APIC.lock().enable();
     }
     info!("enabled apic with timer");
+}
+
+#[allow(dead_code)]
+pub fn init_io_apic() {
+    const IO_APIC_BASE: VirtAddr = VirtAddr::new_truncate(0x2222_0000_0000);
+
+    unsafe {
+        let frame = PhysFrame::containing_address(PhysAddr::new(lapic::xapic_base()));
+        let page = Page::containing_address(IO_APIC_BASE);
+        let flags = PageTableFlags::PRESENT | PageTableFlags::WRITABLE | PageTableFlags::NO_CACHE;
+
+        map_to(page, frame, flags);
+    }
+
+    // Need ACPI info.
+    unsafe {
+        let mut io_apic = IoApic::new(IO_APIC_BASE.as_u64());
+        io_apic.init(IO_APIC_INTERRUPT_OFFSET);
+
+        let mut entry = RedirectionTableEntry::default();
+        entry.set_mode(IrqMode::Fixed);
+        entry.set_flags(IrqFlags::LEVEL_TRIGGERED | IrqFlags::LOW_ACTIVE | IrqFlags::MASKED);
+        entry.set_dest(0); // CPU 0
+        io_apic.set_table_entry(UserInterrupt::Serial.irq_number(), entry);
+
+        io_apic.enable_irq(UserInterrupt::Serial.irq_number());
+    }
 }
 
 pub fn enable() {
@@ -115,6 +162,14 @@ mod handlers {
 
     pub extern "x86-interrupt" fn apic_timer(_: InterruptStackFrame) {
         print!(".");
+
+        unsafe {
+            super::LOCAL_APIC.lock().end_of_interrupt();
+        }
+    }
+
+    pub extern "x86-interrupt" fn serial(_: InterruptStackFrame) {
+        print!("s");
 
         unsafe {
             super::LOCAL_APIC.lock().end_of_interrupt();
