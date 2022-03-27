@@ -1,4 +1,4 @@
-use litchi_boot::BootInfo;
+use litchi_common::BootInfo;
 use log::info;
 use spin::{Mutex, Once};
 use x86_64::{

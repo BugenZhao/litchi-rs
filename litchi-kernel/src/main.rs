@@ -4,6 +4,9 @@
 #![feature(abi_x86_interrupt)]
 #![feature(type_alias_impl_trait)]
 
+extern crate alloc;
+
+mod allocator;
 mod frame_allocator;
 mod gdt;
 mod interrupts;
@@ -12,7 +15,7 @@ mod serial_log;
 
 use core::panic::PanicInfo;
 
-use litchi_boot::BootInfo;
+use litchi_common::BootInfo;
 use log::{error, info};
 use spin::Once;
 use x86_64::instructions;

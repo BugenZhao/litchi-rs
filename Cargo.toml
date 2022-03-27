@@ -1,5 +1,5 @@
 [workspace]
-members = ["litchi-boot", "litchi-kernel"]
+members = ["litchi-common", "litchi-boot", "litchi-kernel"]
 
 [profile.dev]
 panic = "abort"

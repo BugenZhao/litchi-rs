@@ -8,7 +8,7 @@ use core::arch::asm;
 
 use align_data::{include_aligned, Align4K};
 use alloc::vec::Vec;
-use litchi_boot::BootInfo;
+use litchi_common::BootInfo;
 use log::info;
 use uefi::{prelude::*, proto::console::text::Color};
 use x86_64::{
