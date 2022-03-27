@@ -1,3 +1,5 @@
+use core::intrinsics::copy_nonoverlapping;
+
 use itertools::{EitherOrBoth, Itertools};
 use log::info;
 use x86_64::{
@@ -65,25 +67,57 @@ where
             let start_frame = PhysFrame::containing_address(file_start);
             let end_frame = PhysFrame::containing_address(file_end - 1u64);
 
-            for pair in Page::range_inclusive(start_page, end_page)
-                .zip_longest(PhysFrame::range_inclusive(start_frame, end_frame))
-            {
-                let (page, frame) = match pair {
-                    EitherOrBoth::Both(page, frame) => (page, frame),
-                    EitherOrBoth::Left(page) => {
-                        let frame = allocate_zeroed_frame(self.allocator);
-                        (page, frame)
+            if segment.mem_size() > segment.file_size() {
+                for pair in Page::range_inclusive(start_page, end_page)
+                    .zip_longest(PhysFrame::range_inclusive(start_frame, end_frame))
+                {
+                    let (page, new_frame) = match pair {
+                        EitherOrBoth::Both(page, frame) => unsafe {
+                            let new_frame = allocate_zeroed_frame(self.allocator);
+                            let size_in_frame =
+                                core::cmp::min(frame.size(), file_end - frame.start_address())
+                                    as usize;
+                            copy_nonoverlapping(
+                                frame.start_address().as_u64() as *const u8,
+                                new_frame.start_address().as_u64() as *mut u8,
+                                size_in_frame,
+                            );
+                            (page, new_frame)
+                        },
+                        EitherOrBoth::Left(page) => {
+                            let new_frame = allocate_zeroed_frame(self.allocator);
+                            (page, new_frame)
+                        }
+                        EitherOrBoth::Right(_frame) => unreachable!(),
+                    };
+
+                    unsafe {
+                        self.page_table
+                            .map_to(page, new_frame, flags, self.allocator)
+                            .expect("failed to map page")
+                            .flush();
+
+                        info!("mapped bss {:?} to {:?}", page, new_frame);
                     }
-                    EitherOrBoth::Right(_frame) => break,
-                };
+                }
+            } else {
+                for pair in Page::range_inclusive(start_page, end_page)
+                    .zip_longest(PhysFrame::range_inclusive(start_frame, end_frame))
+                {
+                    let (page, frame) = match pair {
+                        EitherOrBoth::Both(page, frame) => (page, frame),
+                        EitherOrBoth::Left(_page) => panic!("frame not enough"),
+                        EitherOrBoth::Right(_frame) => break,
+                    };
 
-                unsafe {
-                    self.page_table
-                        .map_to(page, frame, flags, self.allocator)
-                        .expect("failed to map page")
-                        .flush();
+                    unsafe {
+                        self.page_table
+                            .map_to(page, frame, flags, self.allocator)
+                            .expect("failed to map page")
+                            .flush();
 
-                    info!("mapped {:?} to {:?}", page, frame);
+                        info!("mapped {:?} to {:?}", page, frame);
+                    }
                 }
             }
 

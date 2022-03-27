@@ -1,0 +1,22 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Attach to bootloader",
+            "type": "lldb",
+            "request": "custom",
+            "targetCreateCommands": ["target create ${workspaceFolder}/target/x86_64-unknown-uefi-debug/debug/litchi-boot.efi"],
+            "processCreateCommands": ["gdb-remote localhost:1234"]
+        },
+        {
+            "name": "Attach to kernel",
+            "type": "lldb",
+            "request": "custom",
+            "targetCreateCommands": ["target create ${workspaceFolder}/target/x86_64-unknown-litchi/debug/litchi-kernel"],
+            "processCreateCommands": ["gdb-remote localhost:1234"]
+        }
+    ]
+}
