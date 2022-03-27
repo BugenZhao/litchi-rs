@@ -3,6 +3,7 @@
 #![feature(default_alloc_error_handler)]
 #![feature(abi_x86_interrupt)]
 
+mod gdt;
 mod interrupts;
 mod qemu;
 mod serial_logger;
@@ -40,8 +41,11 @@ pub extern "C" fn kernel_main(boot_info: *const BootInfo) {
     BOOT_INFO.call_once(|| unsafe { &(*boot_info) });
     info!("boot info: {:#?}", BOOT_INFO.get().unwrap());
 
+    gdt::init();
     interrupts::init();
     instructions::interrupts::int3();
+
+    stack_overflow();
 
     exit(ExitCode::Success);
 }
@@ -50,4 +54,9 @@ pub extern "C" fn kernel_main(boot_info: *const BootInfo) {
 fn panic(info: &PanicInfo) -> ! {
     error!("{}", info);
     exit(ExitCode::Failed);
+}
+
+#[allow(unconditional_recursion)]
+fn stack_overflow() {
+    stack_overflow();
 }
