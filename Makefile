@@ -6,7 +6,10 @@ efi/QEMU_EFI.fd:
 	@mkdir -p efi
 	curl -L https://github.com/rust-osdev/ovmf-prebuilt/releases/download/v0.20211216.148%2Bg22130dcd98/OVMF-pure-efi.fd -o efi/QEMU_EFI.fd
 
-build: build-kernel build-boot
+build: build-users build-kernel build-boot
+
+build-users:
+	cd litchi-user && cargo build --bins
 
 build-kernel:
 	cd litchi-kernel && cargo build
@@ -18,10 +21,10 @@ efi/EFI/BOOT/BOOTX64.efi: build-boot
 	@mkdir -p efi/EFI/BOOT
 	cp target/x86_64-unknown-uefi/debug/litchi-boot.efi efi/EFI/BOOT/BOOTX64.efi
 
-efi/litchi-kernel: build-kernel
+efi/litchi-kernel: build-users build-kernel
 	cp target/x86_64-unknown-litchi/debug/litchi-kernel efi/litchi-kernel
 
-qemu: efi/QEMU_EFI.fd efi/EFI/BOOT/BOOTX64.efi efi/litchi-kernel
+qemu: efi/QEMU_EFI.fd efi/litchi-kernel efi/EFI/BOOT/BOOTX64.efi
 	rm -f efi/NvVars
 	qemu-system-x86_64 \
 		-m 256M \

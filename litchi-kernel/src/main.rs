@@ -31,7 +31,7 @@ static BOOT_INFO: Once<&'static BootInfo> = Once::new();
 
 #[allow(unreachable_code)]
 #[no_mangle]
-pub extern "C" fn kernel_main(boot_info: *const BootInfo) {
+pub extern "C" fn _kernel_main(boot_info: *const BootInfo) {
     // Initialize serial logger
     serial_log::init();
     info!("Hello, the Litchi kernel!");

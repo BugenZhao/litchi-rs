@@ -37,6 +37,7 @@ impl PageTableWrapper {
         Self::from_frame(current_frame)
     }
 
+    #[allow(unused)]
     pub fn new() -> (PhysFrame, Self) {
         let frame = instructions::interrupts::without_interrupts(|| {
             FRAME_ALLOCATOR
