@@ -35,7 +35,7 @@ pub extern "C" fn kernel_main(boot_info: *const BootInfo) {
 
     // Store the global boot info
     BOOT_INFO.call_once(|| unsafe { &(*boot_info) });
-    info!("boot info: {:#?}", BOOT_INFO.get().unwrap());
+    info!("boot info: {:?}", BOOT_INFO.get().unwrap());
 
     // Check BSS
     memory_check();

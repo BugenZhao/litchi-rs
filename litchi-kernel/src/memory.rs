@@ -1,5 +1,5 @@
 use log::info;
-use spin::{Mutex, Once};
+use spin::Mutex;
 use x86_64::{
     instructions, registers,
     structures::paging::{
@@ -12,18 +12,23 @@ use crate::{
     BOOT_INFO,
 };
 
-pub static PAGE_TABLE: Once<Mutex<OffsetPageTable>> = Once::new();
+lazy_static::lazy_static! {
+    pub static ref PAGE_TABLE: Mutex<OffsetPageTable<'static>> = Mutex::new(new_page_table());
+}
+
+fn new_page_table() -> OffsetPageTable<'static> {
+    let boot_info = BOOT_INFO.get().expect("boot info not set");
+
+    let frame = registers::control::Cr3::read().0;
+    let l4_table = frame.start_address().as_u64() as *mut PageTable;
+    unsafe {
+        let l4_table = l4_table.as_mut().unwrap();
+        OffsetPageTable::new(l4_table, boot_info.phys_offset)
+    }
+}
 
 pub fn init() {
-    let boot_info = BOOT_INFO.get().expect("boot info not set");
-    PAGE_TABLE.call_once(|| {
-        let frame = registers::control::Cr3::read().0;
-        let l4_table = frame.start_address().as_u64() as *mut PageTable;
-        unsafe {
-            let l4_table = l4_table.as_mut().unwrap();
-            Mutex::new(OffsetPageTable::new(l4_table, boot_info.phys_offset))
-        }
-    });
+    lazy_static::initialize(&PAGE_TABLE);
 
     info!("prepared page table")
 }
@@ -37,7 +42,7 @@ where
             .get()
             .expect("frame allocator not initialized")
             .lock();
-        let mut page_table = PAGE_TABLE.get().expect("page table not initialized").lock();
+        let mut page_table = PAGE_TABLE.lock();
 
         f(&mut *frame_allocator, &mut *page_table)
     })
