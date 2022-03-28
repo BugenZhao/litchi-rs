@@ -17,6 +17,13 @@
             "request": "custom",
             "targetCreateCommands": ["target create ${workspaceFolder}/target/x86_64-unknown-litchi/debug/litchi-kernel"],
             "processCreateCommands": ["gdb-remote localhost:1234"]
-        }
+        },
+        {
+            "name": "Attach to user binary",
+            "type": "lldb",
+            "request": "custom",
+            "targetCreateCommands": ["target create ${workspaceFolder}/target/x86_64-unknown-litchi-user/debug/loop"],
+            "processCreateCommands": ["gdb-remote localhost:1234"]
+        },
     ]
 }

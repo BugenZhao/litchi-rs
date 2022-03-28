@@ -1,4 +1,3 @@
-
 use core::fmt::Debug;
 
 use alloc::vec::Vec;
@@ -8,6 +7,8 @@ use x86_64::VirtAddr;
 
 pub struct BootInfo {
     pub name: &'static str,
+
+    pub kernel_entry: VirtAddr,
 
     pub kernel_stack_top: VirtAddr,
 
@@ -60,6 +61,7 @@ impl Debug for BootInfo {
 
         f.debug_struct("BootInfo")
             .field("name", &self.name)
+            .field("kernel_entry", &self.kernel_entry)
             .field("kernel_stack_top", &self.kernel_stack_top)
             .field("phys_offset", &self.phys_offset)
             .field("usable_memory", &UsableMemory(self.usable_memory()))

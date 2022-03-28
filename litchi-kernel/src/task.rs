@@ -1,3 +1,5 @@
+use core::arch::asm;
+
 use align_data::{include_aligned, Align4K};
 use litchi_common::elf_loader::{ElfLoader, LoaderConfig};
 use log::info;
@@ -31,9 +33,11 @@ static EMBEDDED_USER_BIN: &[u8] = include_aligned!(
 );
 
 pub fn init() {
-    let (_page_table_frame, page_table) = PageTableWrapper::new();
+    const USER_STACK_TOP: u64 = 0x1889_0000_0000;
+
+    let page_table = PageTableWrapper::new_user();
     let loader_config = LoaderConfig {
-        stack_top: VirtAddr::new(0x1889_0000_0000),
+        stack_top: VirtAddr::new(USER_STACK_TOP),
         stack_pages: 10,
         userspace: true,
     };
@@ -47,6 +51,15 @@ pub fn init() {
         )
         .load()
     });
-
     info!("loaded embedded user binary, entry point {:p}", entry_point);
+
+    page_table.load();
+    info!("loaded user page table");
+
+    unsafe {
+        asm!("mov rsp, {}; call {}",
+            in(reg) USER_STACK_TOP,
+            in(reg) entry_point,
+        );
+    }
 }

@@ -5,9 +5,9 @@ use log::info;
 use x86_64::{
     structures::paging::{
         FrameAllocator, Mapper, OffsetPageTable, Page, PageSize, PageTableFlags, PhysFrame,
-        Size4KiB,
+        Size4KiB, Translate,
     },
-    PhysAddr, VirtAddr,
+    VirtAddr,
 };
 use xmas_elf::{header, program, ElfFile};
 
@@ -60,7 +60,11 @@ where
     }
 
     pub fn load(self) -> EntryPoint {
-        let file_base = PhysAddr::new(self.elf.input.as_ptr() as u64);
+        // TODO: This requires the target page table can access the elf input.
+        let file_base = self
+            .page_table
+            .translate_addr(VirtAddr::from_ptr(self.elf.input.as_ptr()))
+            .expect("failed to translate file base");
         assert!(
             file_base.is_aligned(Size4KiB::SIZE),
             "this elf is not 4K aligned"

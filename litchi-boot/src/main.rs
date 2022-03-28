@@ -105,6 +105,7 @@ fn efi_main(handle: Handle, mut system_table: SystemTable<Boot>) -> Status {
 
     let boot_info = BootInfo {
         name: "litchi",
+        kernel_entry: VirtAddr::from_ptr(kernel_entry),
         kernel_stack_top: VirtAddr::new(KERNEL_STACK_TOP),
         system_table,
         phys_offset: VirtAddr::zero(),

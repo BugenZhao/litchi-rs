@@ -1,9 +1,16 @@
+use core::{fmt::Debug, intrinsics::copy_nonoverlapping};
+
 use log::info;
 use spin::Mutex;
 use x86_64::{
-    instructions, registers,
+    instructions,
+    registers::{
+        self,
+        control::{Cr3, Cr3Flags},
+    },
     structures::paging::{
-        FrameAllocator, Mapper, OffsetPageTable, Page, PageTable, PageTableFlags, PhysFrame,
+        FrameAllocator, Mapper, OffsetPageTable, Page, PageSize, PageTable, PageTableFlags,
+        PhysFrame,
     },
 };
 
@@ -13,6 +20,8 @@ use crate::{
 };
 
 pub struct PageTableWrapper {
+    frame: PhysFrame,
+
     inner: Mutex<OffsetPageTable<'static>>,
 }
 
@@ -27,6 +36,7 @@ impl PageTableWrapper {
         };
 
         Self {
+            frame,
             inner: Mutex::new(inner),
         }
     }
@@ -37,7 +47,7 @@ impl PageTableWrapper {
         Self::from_frame(current_frame)
     }
 
-    pub fn new() -> (PhysFrame, Self) {
+    pub fn new_user() -> Self {
         let frame = instructions::interrupts::without_interrupts(|| {
             FRAME_ALLOCATOR
                 .get()
@@ -47,7 +57,23 @@ impl PageTableWrapper {
                 .expect("failed to allocate frame for new page table")
         });
 
-        (frame, Self::from_frame(frame))
+        // Copy mapping for kernel.
+        // TODO: This requires memory space used for kernel should not overlap with users.
+        unsafe {
+            copy_nonoverlapping(
+                KERNEL_PAGE_TABLE.frame.start_address().as_u64() as *const u8,
+                frame.start_address().as_u64() as *mut _,
+                frame.size() as usize,
+            );
+        }
+
+        Self::from_frame(frame)
+    }
+
+    pub fn load(&self) {
+        unsafe {
+            Cr3::write(self.frame, Cr3Flags::empty());
+        }
     }
 
     pub fn with_allocator<F, R>(&self, f: F) -> R
@@ -65,7 +91,14 @@ impl PageTableWrapper {
         })
     }
 
-    pub unsafe fn map_to(&self, page: Page, frame: PhysFrame, flags: PageTableFlags) {
+    pub unsafe fn map_to<S: PageSize + Debug>(
+        &self,
+        page: Page<S>,
+        frame: PhysFrame<S>,
+        flags: PageTableFlags,
+    ) where
+        OffsetPageTable<'static>: Mapper<S>,
+    {
         self.with_allocator(|frame_allocator, page_table| {
             page_table
                 .map_to(page, frame, flags, &mut *frame_allocator)

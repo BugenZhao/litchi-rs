@@ -11,7 +11,7 @@ use x86_64::{
     instructions, set_general_handler,
     structures::{
         idt::InterruptDescriptorTable,
-        paging::{Page, PageTableFlags, PhysFrame},
+        paging::{Page, PageTableFlags, PhysFrame, Size4KiB},
     },
     PhysAddr, VirtAddr,
 };
@@ -39,6 +39,9 @@ fn new_idt() -> InterruptDescriptorTable {
             .set_handler_fn(double_fault)
             .set_stack_index(DOUBLE_FAULT_IST_INDEX);
     }
+
+    // Page fault
+    idt.page_fault.set_handler_fn(page_fault);
 
     // APIC Timer
     idt[UserInterrupt::ApicTimer.as_index()].set_handler_fn(reg_preserving_apic_timer);
@@ -108,7 +111,7 @@ pub fn init_io_apic() {
         let page = Page::containing_address(IO_APIC_BASE);
         let flags = PageTableFlags::PRESENT | PageTableFlags::WRITABLE | PageTableFlags::NO_CACHE;
 
-        KERNEL_PAGE_TABLE.map_to(page, frame, flags);
+        KERNEL_PAGE_TABLE.map_to::<Size4KiB>(page, frame, flags);
     }
 
     // Need ACPI info.
@@ -135,7 +138,7 @@ mod handlers {
     use core::arch::asm;
 
     use log::{error, info};
-    use x86_64::structures::idt::InterruptStackFrame;
+    use x86_64::structures::idt::{InterruptStackFrame, PageFaultErrorCode};
 
     use crate::{
         print,
@@ -167,6 +170,18 @@ mod handlers {
         error!(
             "double fault: {:?}, error code: {}; current stack ptr: {:p}",
             stack_frame, error_code, stack_pointer
+        );
+
+        exit(ExitCode::Failed)
+    }
+
+    pub extern "x86-interrupt" fn page_fault(
+        stack_frame: InterruptStackFrame,
+        error_code: PageFaultErrorCode,
+    ) {
+        error!(
+            "page fault: {:?}, error code: {:?}",
+            stack_frame, error_code
         );
 
         exit(ExitCode::Failed)
