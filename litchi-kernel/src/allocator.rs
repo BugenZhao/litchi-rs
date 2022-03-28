@@ -15,7 +15,7 @@ use x86_64::{
     VirtAddr,
 };
 
-use crate::memory::allocate_and_map_to;
+use crate::memory::KERNEL_PAGE_TABLE;
 
 struct Dummy;
 
@@ -45,7 +45,7 @@ pub fn init() {
         let flags = PageTableFlags::PRESENT | PageTableFlags::WRITABLE;
 
         unsafe {
-            allocate_and_map_to(page, flags);
+            KERNEL_PAGE_TABLE.allocate_and_map_to(page, flags);
         }
     }
 

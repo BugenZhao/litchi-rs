@@ -40,7 +40,7 @@ unsafe impl FrameAllocator<Size4KiB> for BootInfoFrameAllocator {
     fn allocate_frame(&mut self) -> Option<PhysFrame<Size4KiB>> {
         self.iter
             .next()
-            .or_else(|| self.deallocated.as_mut().map(|de| de.pop_front()).flatten())
+            .or_else(|| self.deallocated.as_mut().and_then(|de| de.pop_front()))
     }
 }
 

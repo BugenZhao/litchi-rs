@@ -16,7 +16,7 @@ use x86_64::{
     PhysAddr, VirtAddr,
 };
 
-use crate::{gdt::DOUBLE_FAULT_IST_INDEX, memory::map_to};
+use crate::{gdt::DOUBLE_FAULT_IST_INDEX, memory::KERNEL_PAGE_TABLE};
 
 lazy_static! {
     static ref IDT: InterruptDescriptorTable = new_idt();
@@ -108,7 +108,7 @@ pub fn init_io_apic() {
         let page = Page::containing_address(IO_APIC_BASE);
         let flags = PageTableFlags::PRESENT | PageTableFlags::WRITABLE | PageTableFlags::NO_CACHE;
 
-        map_to(page, frame, flags);
+        KERNEL_PAGE_TABLE.map_to(page, frame, flags);
     }
 
     // Need ACPI info.
