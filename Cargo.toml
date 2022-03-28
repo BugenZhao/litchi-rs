@@ -1,3 +1,5 @@
+cargo-features = ["strip"]
+
 [workspace]
 members = ["litchi-common", "litchi-boot", "litchi-kernel"]
 
@@ -6,3 +8,5 @@ panic = "abort"
 
 [profile.release]
 panic = "abort"
+opt-level = "z"
+strip = true
