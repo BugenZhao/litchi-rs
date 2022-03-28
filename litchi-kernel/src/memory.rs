@@ -37,7 +37,6 @@ impl PageTableWrapper {
         Self::from_frame(current_frame)
     }
 
-    #[allow(unused)]
     pub fn new() -> (PhysFrame, Self) {
         let frame = instructions::interrupts::without_interrupts(|| {
             FRAME_ALLOCATOR
@@ -53,7 +52,7 @@ impl PageTableWrapper {
 
     pub fn with_allocator<F, R>(&self, f: F) -> R
     where
-        F: FnOnce(&mut BootInfoFrameAllocator, &mut OffsetPageTable) -> R,
+        F: FnOnce(&mut BootInfoFrameAllocator, &mut OffsetPageTable<'static>) -> R,
     {
         instructions::interrupts::without_interrupts(|| {
             let mut frame_allocator = FRAME_ALLOCATOR

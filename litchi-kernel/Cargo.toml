@@ -6,6 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+align-data = "0.1"
 itertools = { version = "0.10", default-features = false }
 lazy_static = { version = "1.4", features = ["spin_no_std"] }
 linked_list_allocator = "0.9"

@@ -111,6 +111,7 @@ dependencies = [
 name = "litchi-kernel"
 version = "0.1.0"
 dependencies = [
+ "align-data",
  "itertools",
  "lazy_static",
  "linked_list_allocator",

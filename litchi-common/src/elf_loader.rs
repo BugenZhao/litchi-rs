@@ -25,7 +25,7 @@ pub struct ElfLoader<'a, A> {
 
     elf: ElfFile<'static>,
 
-    page_table: OffsetPageTable<'static>,
+    page_table: &'a mut OffsetPageTable<'static>,
 
     allocator: &'a mut A,
 }
@@ -38,7 +38,7 @@ where
         config: &'a LoaderConfig,
         input: &'static [u8],
         allocator: &'a mut A,
-        page_table: OffsetPageTable<'static>,
+        page_table: &'a mut OffsetPageTable<'static>,
     ) -> Self {
         let elf = ElfFile::new(input).expect("failed to parse elf");
         Self::check_dynamic(&elf);
@@ -57,7 +57,7 @@ where
         }
     }
 
-    pub fn load(mut self) -> (OffsetPageTable<'static>, EntryPoint) {
+    pub fn load(self) -> EntryPoint {
         let file_base = PhysAddr::new(self.elf.input.as_ptr() as u64);
         assert!(
             file_base.is_aligned(Size4KiB::SIZE),
@@ -168,7 +168,7 @@ where
             }
         }
 
-        (self.page_table, entry_point as EntryPoint)
+        entry_point as EntryPoint
     }
 }
 

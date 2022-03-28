@@ -50,6 +50,7 @@ pub extern "C" fn _kernel_main(boot_info: *const BootInfo) {
     memory::init();
     // interrupts::init_io_apic(); // TODO: need ACPI info
     allocator::init();
+    task::init();
 
     // Test interrupts
     interrupts::enable();

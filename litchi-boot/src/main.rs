@@ -53,17 +53,21 @@ fn efi_main(handle: Handle, mut system_table: SystemTable<Boot>) -> Status {
     );
 
     let mut allocator = BootFrameAllocator::new(system_table.boot_services());
-    let page_table = create_kernel_page_table(&mut allocator);
+    let mut page_table = create_kernel_page_table(&mut allocator);
     info!("created kernel page table");
 
     let loader_config = LoaderConfig {
         stack_top: VirtAddr::new(KERNEL_STACK_TOP),
         stack_pages: KERNEL_STACK_PAGES,
     };
-    let kernel_loader =
-        ElfLoader::new(&loader_config, kernel_elf_bytes, &mut allocator, page_table);
+    let kernel_loader = ElfLoader::new(
+        &loader_config,
+        kernel_elf_bytes,
+        &mut allocator,
+        &mut page_table,
+    );
 
-    let (mut page_table, kernel_entry) = kernel_loader.load();
+    let kernel_entry = kernel_loader.load();
     info!("loaded kernel elf, entry {:p}", kernel_entry);
 
     unsafe {
