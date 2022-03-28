@@ -17,10 +17,9 @@ pub struct PageTableWrapper {
 }
 
 impl PageTableWrapper {
-    fn kernel() -> Self {
+    fn from_frame(frame: PhysFrame) -> Self {
         let boot_info = BOOT_INFO.get().expect("boot info not set");
 
-        let frame = registers::control::Cr3::read().0;
         let l4_table = frame.start_address().as_u64() as *mut PageTable;
         let inner = unsafe {
             let l4_table = l4_table.as_mut().unwrap();
@@ -30,6 +29,25 @@ impl PageTableWrapper {
         Self {
             inner: Mutex::new(inner),
         }
+    }
+
+    fn kernel() -> Self {
+        let current_frame = registers::control::Cr3::read().0;
+
+        Self::from_frame(current_frame)
+    }
+
+    pub fn new() -> (PhysFrame, Self) {
+        let frame = instructions::interrupts::without_interrupts(|| {
+            FRAME_ALLOCATOR
+                .get()
+                .expect("frame allocator not initialized")
+                .lock()
+                .allocate_frame()
+                .expect("failed to allocate frame for new page table")
+        });
+
+        (frame, Self::from_frame(frame))
     }
 
     pub fn with_allocator<F, R>(&self, f: F) -> R

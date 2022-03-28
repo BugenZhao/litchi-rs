@@ -4,6 +4,8 @@
 #![feature(abi_x86_interrupt)]
 #![feature(type_alias_impl_trait)]
 #![feature(type_name_of_val)]
+#![feature(naked_functions)]
+#![feature(asm_sym)]
 
 extern crate alloc;
 
@@ -14,6 +16,7 @@ mod interrupts;
 mod memory;
 mod qemu;
 mod serial_log;
+mod task;
 
 use core::panic::PanicInfo;
 

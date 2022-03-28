@@ -1,3 +1,5 @@
+.PHONY: default build build-kernel build-boot qemu kill clean
+
 default: qemu
 
 efi/QEMU_EFI.fd:
