@@ -8,7 +8,10 @@ extern crate alloc;
 use core::arch::asm;
 
 use alloc::vec::Vec;
-use litchi_common::BootInfo;
+use litchi_common::{
+    elf_loader::{ElfLoader, LoaderConfig},
+    BootInfo,
+};
 use log::info;
 use uefi::{prelude::*, proto::console::text::Color};
 use x86_64::{
@@ -17,13 +20,16 @@ use x86_64::{
     PhysAddr, VirtAddr,
 };
 
-use crate::{frame_allocator::BootFrameAllocator, kernel_loader::KernelLoader};
+use crate::{frame_allocator::BootFrameAllocator, page_table::create_kernel_page_table};
 
 mod file_system;
 mod frame_allocator;
-mod kernel_loader;
+mod page_table;
 
 const KERNEL_PATH: &str = "litchi-kernel";
+
+const KERNEL_STACK_TOP: u64 = 0x6667_0000_0000;
+const KERNEL_STACK_PAGES: u64 = 20;
 
 #[entry]
 fn efi_main(handle: Handle, mut system_table: SystemTable<Boot>) -> Status {
@@ -41,12 +47,24 @@ fn efi_main(handle: Handle, mut system_table: SystemTable<Boot>) -> Status {
 
     let file = file_system::open(system_table.boot_services(), KERNEL_PATH);
     let kernel_elf_bytes = file_system::read(system_table.boot_services(), file);
-    info!("loaded kernel `{}` at {:p}", KERNEL_PATH, kernel_elf_bytes);
+    info!(
+        "loaded kernel file `{}` at {:p}",
+        KERNEL_PATH, kernel_elf_bytes
+    );
 
     let mut allocator = BootFrameAllocator::new(system_table.boot_services());
-    let kernel_loader = KernelLoader::new(kernel_elf_bytes, &mut allocator);
+    let page_table = create_kernel_page_table(&mut allocator);
+    info!("created kernel page table");
 
-    let (mut page_table, kernel_stack_top, kernel_entry) = kernel_loader.load();
+    let loader_config = LoaderConfig {
+        stack_top: VirtAddr::new(KERNEL_STACK_TOP),
+        stack_pages: KERNEL_STACK_PAGES,
+    };
+    let kernel_loader =
+        ElfLoader::new(&loader_config, kernel_elf_bytes, &mut allocator, page_table);
+
+    let (mut page_table, kernel_entry) = kernel_loader.load();
+    info!("loaded kernel elf, entry {:p}", kernel_entry);
 
     unsafe {
         Cr3::write(
@@ -82,7 +100,7 @@ fn efi_main(handle: Handle, mut system_table: SystemTable<Boot>) -> Status {
 
     let boot_info = BootInfo {
         name: "litchi",
-        kernel_stack_top,
+        kernel_stack_top: VirtAddr::new(KERNEL_STACK_TOP),
         system_table,
         phys_offset: VirtAddr::zero(),
         memory_descriptors,
@@ -90,7 +108,7 @@ fn efi_main(handle: Handle, mut system_table: SystemTable<Boot>) -> Status {
 
     unsafe {
         asm!("mov rsp, {}; call {}",
-            in(reg) kernel_stack_top.as_u64(),
+            in(reg) KERNEL_STACK_TOP,
             in(reg) kernel_entry,
             in("rdi") &boot_info as *const _
         );

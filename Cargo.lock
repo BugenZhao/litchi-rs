@@ -99,10 +99,12 @@ dependencies = [
 name = "litchi-common"
 version = "0.1.0"
 dependencies = [
+ "itertools",
  "log",
  "size_format",
  "uefi",
  "x86_64",
+ "xmas-elf",
 ]
 
 [[package]]

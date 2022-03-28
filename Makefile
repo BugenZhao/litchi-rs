@@ -1,4 +1,4 @@
-.PHONY: default build build-kernel build-boot qemu kill clean
+.PHONY: default build build-users build-kernel build-boot qemu kill clean
 
 default: qemu
 
@@ -9,7 +9,7 @@ efi/QEMU_EFI.fd:
 build: build-users build-kernel build-boot
 
 build-users:
-	cd litchi-user && cargo build --bins
+	cd litchi-user && cargo build
 
 build-kernel:
 	cd litchi-kernel && cargo build
