@@ -9,7 +9,7 @@ efi/QEMU_EFI.fd:
 build: build-users build-kernel build-boot
 
 build-users:
-	cd litchi-user && cargo build
+	cd litchi-user && cargo build --bins
 
 build-kernel:
 	cd litchi-kernel && cargo build
