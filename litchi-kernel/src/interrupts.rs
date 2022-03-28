@@ -8,7 +8,7 @@ use x2apic::{
     lapic::{self, LocalApic},
 };
 use x86_64::{
-    instructions,
+    instructions, set_general_handler,
     structures::{
         idt::InterruptDescriptorTable,
         paging::{Page, PageTableFlags, PhysFrame},
@@ -26,6 +26,9 @@ fn new_idt() -> InterruptDescriptorTable {
     use handlers::*;
 
     let mut idt = InterruptDescriptorTable::new();
+
+    // default unhandled
+    set_general_handler!(&mut idt, unhandled);
 
     // Breakpoint
     idt.breakpoint.set_handler_fn(breakpoint);
@@ -131,7 +134,7 @@ pub fn enable() {
 mod handlers {
     use core::arch::asm;
 
-    use log::{info, warn};
+    use log::{error, info};
     use x86_64::structures::idt::InterruptStackFrame;
 
     use crate::{
@@ -152,7 +155,7 @@ mod handlers {
             asm!("mov {}, rsp", out(reg) stack_pointer);
         }
 
-        warn!(
+        error!(
             "double fault: {:?}, error code: {}; current stack ptr: {:p}",
             stack_frame, error_code, stack_pointer
         );
@@ -174,5 +177,13 @@ mod handlers {
         unsafe {
             super::LOCAL_APIC.lock().end_of_interrupt();
         }
+    }
+
+    pub fn unhandled(stack_frame: InterruptStackFrame, index: u8, error_code: Option<u64>) {
+        error!(
+            "unhandled interrupt {}: {:?}, error code: {:?}",
+            index, stack_frame, error_code
+        );
+        exit(ExitCode::Failed)
     }
 }

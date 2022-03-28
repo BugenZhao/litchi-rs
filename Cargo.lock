@@ -114,6 +114,7 @@ dependencies = [
  "linked_list_allocator",
  "litchi-common",
  "log",
+ "seq-macro",
  "size_format",
  "spin 0.9.2",
  "uart_16550",
@@ -241,6 +242,12 @@ name = "scopeguard"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d29ab0c6d3fc0ee92fe66e2d99f700eab17a8d57d1c1d3b748380fb20baa78cd"
+
+[[package]]
+name = "seq-macro"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "70d9841243dbc9928f5fed7946d2862292eebd823d96e13e556924d3db0120d2"
 
 [[package]]
 name = "size_format"
