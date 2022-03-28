@@ -59,6 +59,7 @@ fn efi_main(handle: Handle, mut system_table: SystemTable<Boot>) -> Status {
     let loader_config = LoaderConfig {
         stack_top: VirtAddr::new(KERNEL_STACK_TOP),
         stack_pages: KERNEL_STACK_PAGES,
+        userspace: false,
     };
     let kernel_loader = ElfLoader::new(
         &loader_config,

@@ -18,6 +18,8 @@ pub struct LoaderConfig {
     pub stack_top: VirtAddr,
 
     pub stack_pages: u64,
+
+    pub userspace: bool,
 }
 
 pub struct ElfLoader<'a, A> {
@@ -64,15 +66,21 @@ where
             "this elf is not 4K aligned"
         );
 
+        // TODO: use correct flags
+        let flags = {
+            let mut base = PageTableFlags::PRESENT | PageTableFlags::WRITABLE;
+            if self.config.userspace {
+                base |= PageTableFlags::USER_ACCESSIBLE;
+            }
+            base
+        };
+
         for segment in self
             .elf
             .program_iter()
             .filter(|p| p.get_type().expect("bad type") == program::Type::Load && p.mem_size() > 0)
         {
             info!("begin to map segment {:x?}", segment);
-
-            // TODO: use correct flags
-            let flags = PageTableFlags::PRESENT | PageTableFlags::WRITABLE;
 
             let file_start = file_base + segment.offset();
             let file_end = file_start + segment.file_size();
@@ -151,16 +159,16 @@ where
             let page = stack_page - i;
             let frame = allocate_zeroed_frame(self.allocator);
 
-            let flags = if i == self.config.stack_pages {
+            let stack_flags = if i == self.config.stack_pages {
                 // Make the bottom page unwritable.
-                PageTableFlags::PRESENT
+                flags - PageTableFlags::WRITABLE
             } else {
-                PageTableFlags::PRESENT | PageTableFlags::WRITABLE
+                flags
             };
 
             unsafe {
                 self.page_table
-                    .map_to(page, frame, flags, self.allocator)
+                    .map_to(page, frame, stack_flags, self.allocator)
                     .expect("failed to map page")
                     .flush();
 

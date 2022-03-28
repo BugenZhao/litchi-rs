@@ -35,6 +35,7 @@ pub fn init() {
     let loader_config = LoaderConfig {
         stack_top: VirtAddr::new(0x1889_0000_0000),
         stack_pages: 10,
+        userspace: true,
     };
 
     let entry_point = page_table.with_allocator(|frame_allocator, page_table| {
