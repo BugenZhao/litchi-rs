@@ -51,6 +51,10 @@ where
 
     pub fn load(mut self) -> (OffsetPageTable<'static>, VirtAddr, KernelEntry) {
         let file_base = PhysAddr::new(self.elf.input.as_ptr() as u64);
+        assert!(
+            file_base.is_aligned(Size4KiB::SIZE),
+            "the elf is not 4K aligned"
+        );
 
         for segment in self
             .elf

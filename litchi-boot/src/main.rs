@@ -1,12 +1,12 @@
 #![no_main]
 #![no_std]
 #![feature(abi_efiapi)]
+#![feature(int_roundings)]
 
 extern crate alloc;
 
 use core::arch::asm;
 
-use align_data::{include_aligned, Align4K};
 use alloc::vec::Vec;
 use litchi_common::BootInfo;
 use log::info;
@@ -19,13 +19,11 @@ use x86_64::{
 
 use crate::{frame_allocator::BootFrameAllocator, kernel_loader::KernelLoader};
 
-pub mod frame_allocator;
-pub mod kernel_loader;
+mod file_system;
+mod frame_allocator;
+mod kernel_loader;
 
-static KERNEL_ELF_BYTES: &[u8] = include_aligned!(
-    Align4K,
-    "../../target/x86_64-unknown-litchi/debug/litchi-kernel"
-);
+const KERNEL_PATH: &str = "litchi-kernel";
 
 #[entry]
 fn efi_main(handle: Handle, mut system_table: SystemTable<Boot>) -> Status {
@@ -41,8 +39,12 @@ fn efi_main(handle: Handle, mut system_table: SystemTable<Boot>) -> Status {
 
     info!("Hello, the Litchi bootloader!");
 
+    let file = file_system::open(system_table.boot_services(), KERNEL_PATH);
+    let kernel_elf_bytes = file_system::read(system_table.boot_services(), file);
+    info!("loaded kernel `{}` at {:p}", KERNEL_PATH, kernel_elf_bytes);
+
     let mut allocator = BootFrameAllocator::new(system_table.boot_services());
-    let kernel_loader = KernelLoader::new(KERNEL_ELF_BYTES, &mut allocator);
+    let kernel_loader = KernelLoader::new(kernel_elf_bytes, &mut allocator);
 
     let (mut page_table, kernel_stack_top, kernel_entry) = kernel_loader.load();
 
