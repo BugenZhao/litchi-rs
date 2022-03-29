@@ -33,15 +33,18 @@ fn new_kernel_tss() -> TaskStateSegment {
     tss
 }
 
-struct GlobalDescriptorTableWrapper {
+pub struct GlobalDescriptorTableWrapper {
     gdt: GlobalDescriptorTable,
 
-    kernel_code_selector: SegmentSelector,
-    kernel_tss_selector: SegmentSelector,
+    pub kernel_code_selector: SegmentSelector,
+    pub kernel_tss_selector: SegmentSelector,
+
+    pub user_code_selector: SegmentSelector,
+    pub user_data_selector: SegmentSelector,
 }
 
 lazy_static! {
-    static ref GDT: GlobalDescriptorTableWrapper = new_gdt();
+    pub static ref GDT: GlobalDescriptorTableWrapper = new_gdt();
 }
 
 fn new_gdt() -> GlobalDescriptorTableWrapper {
@@ -50,12 +53,16 @@ fn new_gdt() -> GlobalDescriptorTableWrapper {
     let mut gdt = GlobalDescriptorTable::new();
 
     let kernel_code_selector = gdt.add_entry(Descriptor::kernel_code_segment());
+    let user_code_selector = gdt.add_entry(Descriptor::user_code_segment());
+    let user_data_selector = gdt.add_entry(Descriptor::user_data_segment());
     let kernel_tss_selector = gdt.add_entry(Descriptor::tss_segment(&KERNEL_TSS));
 
     GlobalDescriptorTableWrapper {
         gdt,
         kernel_code_selector,
         kernel_tss_selector,
+        user_code_selector,
+        user_data_selector,
     }
 }
 
