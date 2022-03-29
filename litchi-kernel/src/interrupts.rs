@@ -16,7 +16,7 @@ use x86_64::{
     PhysAddr, VirtAddr,
 };
 
-use crate::{gdt::DOUBLE_FAULT_IST_INDEX, memory::KERNEL_PAGE_TABLE};
+use crate::{gdt::IstIndex, memory::KERNEL_PAGE_TABLE};
 
 lazy_static! {
     static ref IDT: InterruptDescriptorTable = new_idt();
@@ -37,14 +37,18 @@ fn new_idt() -> InterruptDescriptorTable {
     unsafe {
         idt.double_fault
             .set_handler_fn(double_fault)
-            .set_stack_index(DOUBLE_FAULT_IST_INDEX);
+            .set_stack_index(IstIndex::DoubleFault as u16);
     }
 
     // Page fault
     idt.page_fault.set_handler_fn(page_fault);
 
     // APIC Timer
-    idt[UserInterrupt::ApicTimer.as_index()].set_handler_fn(reg_preserving_apic_timer);
+    unsafe {
+        idt[UserInterrupt::ApicTimer.as_index()]
+            .set_handler_fn(reg_preserving_apic_timer)
+            .set_stack_index(IstIndex::UserInterrupt as u16);
+    }
 
     // Serial
     idt[UserInterrupt::Serial.as_index()].set_handler_fn(serial);

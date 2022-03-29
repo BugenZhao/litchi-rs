@@ -10,8 +10,17 @@ use x86_64::{
     VirtAddr,
 };
 
-pub const DOUBLE_FAULT_IST_INDEX: u16 = 0;
+#[repr(u16)]
+pub enum IstIndex {
+    DoubleFault = 0,
+    UserInterrupt,
+}
+
 const INTERRUPT_STACK_SIZE: usize = 4096 * 5;
+
+// Note: avoid declaring as &[u8] here.
+static DOUBLE_FAULT_STACK: [u8; INTERRUPT_STACK_SIZE] = [0; INTERRUPT_STACK_SIZE];
+static USER_INTERRUPT_STACK: [u8; INTERRUPT_STACK_SIZE] = [0; INTERRUPT_STACK_SIZE];
 
 lazy_static! {
     static ref KERNEL_TSS: TaskStateSegment = new_kernel_tss();
@@ -20,12 +29,21 @@ lazy_static! {
 fn new_kernel_tss() -> TaskStateSegment {
     let mut tss = TaskStateSegment::new();
 
-    tss.interrupt_stack_table[DOUBLE_FAULT_IST_INDEX as usize] = {
-        static STACK: &[u8] = &[0; INTERRUPT_STACK_SIZE];
-        let stack_top = STACK.as_ptr_range().end;
+    tss.interrupt_stack_table[IstIndex::DoubleFault as usize] = {
+        let stack_top = DOUBLE_FAULT_STACK.as_ptr_range().end;
+        debug!(
+            "stack for double fault: {:?}",
+            DOUBLE_FAULT_STACK.as_ptr_range()
+        );
+        VirtAddr::from_ptr(stack_top)
+    };
 
-        debug!("stack for double fault: {:?}", STACK.as_ptr_range());
-
+    tss.interrupt_stack_table[IstIndex::UserInterrupt as usize] = {
+        let stack_top = USER_INTERRUPT_STACK.as_ptr_range().end;
+        debug!(
+            "stack for user interrupt: {:?}",
+            USER_INTERRUPT_STACK.as_ptr_range()
+        );
         VirtAddr::from_ptr(stack_top)
     };
 

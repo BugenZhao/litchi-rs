@@ -116,7 +116,7 @@ pub fn init() {
         frame: InterruptStackFrameValue {
             instruction_pointer: VirtAddr::from_ptr(entry_point),
             code_segment,
-            cpu_flags: 0,
+            cpu_flags: 0x0000_0200, // enable interrupts
             stack_pointer: VirtAddr::new(USER_STACK_TOP),
             stack_segment: data_segment,
         },
