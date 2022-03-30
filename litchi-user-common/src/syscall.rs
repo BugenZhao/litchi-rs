@@ -1,3 +1,4 @@
+use enum_as_inner::EnumAsInner;
 use x86_64::{
     structures::paging::{PageSize, Size4KiB},
     VirtAddr,
@@ -22,7 +23,7 @@ pub enum Syscall<'a> {
     Exit,
 }
 
-#[derive(Debug)]
+#[derive(Debug, EnumAsInner)]
 pub enum SyscallResponse {
     Ok,
     GetTaskId { task_id: u64 },

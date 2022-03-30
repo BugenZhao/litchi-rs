@@ -58,7 +58,7 @@ impl<T> SyscallBuffer<T> {
 impl SyscallBuffer<In> {
     pub(super) unsafe fn call(&mut self, syscall: Syscall) {
         self.put(syscall);
-        asm!("int 114"); // SYSCALL_INTERRUPT
+        asm!("int 114"); // TODO: use const for syscall interrupt number
     }
 
     pub(super) unsafe fn get_syscall(&self) -> Syscall<'static> {

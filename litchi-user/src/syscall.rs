@@ -1,4 +1,4 @@
-use litchi_user_common::syscall::{syscall, Syscall, SyscallResponse};
+use litchi_user_common::syscall::{syscall, Syscall};
 use x86_64::VirtAddr;
 
 pub fn sys_print(args: core::fmt::Arguments) {
@@ -10,11 +10,9 @@ pub fn sys_extend_heap(top: VirtAddr) {
 }
 
 pub fn sys_get_task_id() -> u64 {
-    let response = unsafe { syscall(Syscall::GetTaskId) };
-    match response {
-        SyscallResponse::GetTaskId { task_id } => task_id,
-        _ => unreachable!(),
-    }
+    unsafe { syscall(Syscall::GetTaskId) }
+        .into_get_task_id()
+        .unwrap()
 }
 
 pub fn sys_exit() -> ! {
