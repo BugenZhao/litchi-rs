@@ -1,6 +1,5 @@
 #![no_std]
 #![no_main]
-#![feature(default_alloc_error_handler)]
 
 use litchi_user::syscall::sys_extend_heap;
 use litchi_user_common::heap::USER_HEAP_BASE_ADDR;

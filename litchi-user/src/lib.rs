@@ -1,6 +1,6 @@
 #![no_std]
 #![feature(core_intrinsics)]
-#![feature(default_alloc_error_handler)]
+#![feature(alloc_error_handler)]
 
 extern crate alloc;
 
