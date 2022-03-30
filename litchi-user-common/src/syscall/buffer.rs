@@ -14,13 +14,13 @@ pub struct SyscallInBuffer(&'static mut [u8; SYSCALL_BUFFER_BYTES]);
 
 impl SyscallInBuffer {
     fn new() -> Self {
-        let mem = unsafe {
+        let buffer = unsafe {
             core::slice::from_raw_parts_mut(SYSCALL_IN_ADDR.as_mut_ptr(), SYSCALL_BUFFER_BYTES)
         }
         .try_into()
         .unwrap();
 
-        Self(mem)
+        Self(buffer)
     }
 
     pub(super) unsafe fn call(&mut self, syscall: Syscall) {

@@ -16,7 +16,7 @@ mod buffer;
 
 #[derive(Debug)]
 pub enum Syscall {
-    PrintHello,
+    PrintHello { name: &'static str },
     Exit,
 }
 
@@ -27,4 +27,8 @@ pub enum SyscallResponse {
 
 pub unsafe fn syscall(syscall: Syscall) {
     SYSCALL_IN_BUFFER.lock().call(syscall)
+}
+
+pub unsafe fn get_syscall() -> Syscall {
+    SYSCALL_IN_BUFFER.lock().get()
 }

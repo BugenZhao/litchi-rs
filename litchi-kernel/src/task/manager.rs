@@ -3,9 +3,17 @@ use core::sync::atomic::{AtomicU64, Ordering};
 use alloc::{collections::VecDeque, string::String};
 use lazy_static::lazy_static;
 use litchi_common::elf_loader::{ElfLoader, LoaderConfig};
+use litchi_user_common::syscall::{SYSCALL_BUFFER_PAGES, SYSCALL_IN_ADDR, SYSCALL_OUT_ADDR};
 use log::{debug, info};
 use spin::Mutex;
-use x86_64::{instructions, structures::idt::InterruptStackFrameValue, VirtAddr};
+use x86_64::{
+    instructions,
+    structures::{
+        idt::InterruptStackFrameValue,
+        paging::{Page, PageTableFlags},
+    },
+    VirtAddr,
+};
 
 use crate::{
     gdt::GDT,
@@ -76,6 +84,21 @@ impl TaskManager {
             "loaded user binary `{}`, entry point {:p}",
             name, entry_point
         );
+
+        // Map syscall buffer.
+        unsafe {
+            let flags = PageTableFlags::PRESENT
+                | PageTableFlags::WRITABLE
+                | PageTableFlags::USER_ACCESSIBLE
+                | PageTableFlags::NO_EXECUTE;
+
+            for base_addr in [SYSCALL_IN_ADDR, SYSCALL_OUT_ADDR] {
+                let base_page = Page::from_start_address(base_addr).unwrap();
+                for page in (0..SYSCALL_BUFFER_PAGES).map(|i| base_page + i) {
+                    let _frame = page_table.allocate_and_map_to(page, flags);
+                }
+            }
+        }
 
         let code_segment = GDT.user_code_selector.0 as u64;
         let data_segment = GDT.user_data_selector.0 as u64;
