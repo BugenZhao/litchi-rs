@@ -11,8 +11,9 @@ pub mod syscall;
 use core::panic::PanicInfo;
 
 #[panic_handler]
-fn panic(_info: &PanicInfo) -> ! {
-    loop {}
+fn panic(info: &PanicInfo) -> ! {
+    println!("{}", info);
+    syscall::sys_exit();
 }
 
 extern "C" {

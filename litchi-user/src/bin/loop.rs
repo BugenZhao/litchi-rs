@@ -4,8 +4,6 @@
 
 use litchi_user::println;
 
-extern crate litchi_user;
-
 #[no_mangle]
 extern "C" fn main() {
     println!("welcome litchi user program");

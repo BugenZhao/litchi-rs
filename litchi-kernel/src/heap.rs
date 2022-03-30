@@ -29,7 +29,7 @@ pub fn init() {
         let flags = PageTableFlags::PRESENT | PageTableFlags::WRITABLE;
 
         unsafe {
-            KERNEL_PAGE_TABLE.allocate_and_map_to(page, flags);
+            KERNEL_PAGE_TABLE.allocate_and_map_to(page, flags).unwrap();
         }
     }
 

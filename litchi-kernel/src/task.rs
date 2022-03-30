@@ -8,16 +8,22 @@ pub use frame::{Registers, TaskFrame};
 pub use self::manager::schedule_and_run;
 pub use self::manager::{with_task_manager, TaskManager};
 
-static EMBEDDED_USER_BIN: &[u8] = include_aligned!(
+static LOOP_BIN: &[u8] = include_aligned!(
     Align4K,
     "../../target/x86_64-unknown-litchi-user/debug/loop"
 );
 
+static EVIL_HEAP_BIN: &[u8] = include_aligned!(
+    Align4K,
+    "../../target/x86_64-unknown-litchi-user/debug/evil_heap"
+);
+
 pub fn run() -> ! {
     with_task_manager(|task_manager| {
-        task_manager.load_user("loop1", EMBEDDED_USER_BIN);
-        task_manager.load_user("loop2", EMBEDDED_USER_BIN);
-        task_manager.load_user("loop3", EMBEDDED_USER_BIN);
+        task_manager.load_user("evil_heap", EVIL_HEAP_BIN);
+        task_manager.load_user("loop1", LOOP_BIN);
+        task_manager.load_user("loop2", LOOP_BIN);
+        task_manager.load_user("loop3", LOOP_BIN);
     });
 
     schedule_and_run();

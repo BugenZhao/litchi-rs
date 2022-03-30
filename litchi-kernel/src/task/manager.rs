@@ -7,7 +7,7 @@ use litchi_user_common::{
     heap::USER_HEAP_BASE_ADDR,
     syscall::{SYSCALL_BUFFER_PAGES, SYSCALL_IN_ADDR, SYSCALL_OUT_ADDR},
 };
-use log::{debug, info};
+use log::{debug, info, warn};
 use spin::Mutex;
 use x86_64::{
     instructions,
@@ -103,7 +103,9 @@ impl TaskManager {
             for base_addr in [SYSCALL_IN_ADDR, SYSCALL_OUT_ADDR] {
                 let base_page = Page::from_start_address(base_addr).unwrap();
                 for page in (0..SYSCALL_BUFFER_PAGES).map(|i| base_page + i) {
-                    let _frame = page_table.allocate_and_map_to(page, flags);
+                    page_table
+                        .allocate_and_map_to(page, flags)
+                        .expect("no enough memory");
                 }
             }
         }
@@ -197,6 +199,8 @@ impl TaskManager {
         let top = top.align_up(Size4KiB::SIZE);
         let task = self.running.as_mut().expect("no task running");
 
+        let mut success = true;
+
         if top >= task.heap_top {
             let base_page = Page::from_start_address(task.heap_top).unwrap();
             let top_page = Page::from_start_address(top).unwrap();
@@ -208,12 +212,24 @@ impl TaskManager {
 
             unsafe {
                 for page in Page::range(base_page, top_page) {
-                    task.page_table.allocate_and_map_to(page, flags);
+                    if task.page_table.allocate_and_map_to(page, flags).is_none() {
+                        success = false;
+                        break;
+                    }
                 }
             }
         }
 
-        info!("extend heap to {:?} for task {}", top, task.info.id);
+        if !success {
+            warn!(
+                "no enough memory to extend heap to {:?} for task {}, kill it",
+                top, task.info.id
+            );
+            self.drop_current();
+        } else {
+            task.heap_top = top;
+            info!("extend heap to {:?} for task {}", task.heap_top, task.info.id);
+        }
     }
 
     pub fn current_info(&self) -> Option<&TaskInfo> {

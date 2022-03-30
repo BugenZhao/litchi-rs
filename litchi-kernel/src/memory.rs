@@ -114,16 +114,20 @@ impl PageTableWrapper {
         })
     }
 
-    pub unsafe fn allocate_and_map_to(&self, page: Page, flags: PageTableFlags) -> PhysFrame {
+    pub unsafe fn allocate_and_map_to(
+        &self,
+        page: Page,
+        flags: PageTableFlags,
+    ) -> Option<PhysFrame> {
         self.with_allocator(|frame_allocator, page_table| {
-            let frame = frame_allocator.allocate_frame().expect("no enough memory");
+            let frame = frame_allocator.allocate_frame()?;
 
             page_table
                 .map_to(page, frame, flags, &mut *frame_allocator)
                 .expect("failed to map frame")
                 .flush();
 
-            frame
+            Some(frame)
         })
     }
 }
