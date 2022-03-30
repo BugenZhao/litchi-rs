@@ -1,13 +1,13 @@
 #[macro_export]
 macro_rules! define_frame_saving_handler {
     (yield; $handler_name: ident, $handler_inner: ident) => {
-        define_frame_saving_handler!(put_back_and_yield, $handler_name, $handler_inner);
+        define_frame_saving_handler!(true, $handler_name, $handler_inner);
     };
     ($handler_name: ident, $handler_inner: ident) => {
-        define_frame_saving_handler!(put_back, $handler_name, $handler_inner);
+        define_frame_saving_handler!(false, $handler_name, $handler_inner);
     };
 
-    ($put_back: ident, $handler_name: ident, $handler_inner: ident) => {
+    ($yield: ident, $handler_name: ident, $handler_inner: ident) => {
         #[naked]
         pub extern "x86-interrupt" fn $handler_name(frame: x86_64::structures::idt::InterruptStackFrame) {
             use core::arch::asm;
@@ -18,7 +18,7 @@ macro_rules! define_frame_saving_handler {
                 frame.ds = registers::segmentation::DS::get_reg().0 as u64;
                 frame.es = registers::segmentation::ES::get_reg().0 as u64;
 
-                with_task_manager(|task_manager| task_manager.$put_back(frame));
+                with_task_manager(|task_manager| task_manager.put_back(frame, $yield));
                 let _ = $handler_inner();
                 schedule_and_run();
             }

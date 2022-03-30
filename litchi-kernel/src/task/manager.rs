@@ -129,7 +129,7 @@ impl TaskManager {
         task.frame.take().expect("no frame for task")
     }
 
-    pub fn put_back(&mut self, frame: TaskFrame) {
+    pub fn put_back(&mut self, frame: TaskFrame, yield_task: bool) {
         if !frame.is_user() {
             debug!("frame not from user, ignored");
             return;
@@ -137,20 +137,21 @@ impl TaskManager {
 
         let task = self.running.as_mut().expect("no task running");
         let old_frame = task.frame.replace(frame);
-        assert!(old_frame.is_none(), "replace task frame");
+        assert!(old_frame.is_none(), "task frame exists");
 
-        info!("return from user: {:?}", task.info);
-        debug!("returned from user: {:?}", task);
-    }
+        info!(
+            "returned from user: {:?}, yield = {}",
+            task.info, yield_task
+        );
+        debug!("returned from user: {:?}, yield = {}", task, yield_task);
 
-    pub fn put_back_and_yield(&mut self, frame: TaskFrame) {
-        self.put_back(frame);
-
-        if self.ready.is_empty() {
-            debug!("empty ready queue, no need to yield");
-        } else {
-            let task = self.running.take().unwrap();
-            self.ready.push_back(task);
+        if yield_task {
+            if self.ready.is_empty() {
+                debug!("empty ready queue, no need to yield");
+            } else {
+                let task = self.running.take().unwrap();
+                self.ready.push_back(task);
+            }
         }
     }
 

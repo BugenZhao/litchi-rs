@@ -15,7 +15,9 @@ static EMBEDDED_USER_BIN: &[u8] = include_aligned!(
 
 pub fn run() -> ! {
     with_task_manager(|task_manager| {
-        task_manager.load_user("loop", EMBEDDED_USER_BIN);
+        task_manager.load_user("loop1", EMBEDDED_USER_BIN);
+        task_manager.load_user("loop2", EMBEDDED_USER_BIN);
+        task_manager.load_user("loop3", EMBEDDED_USER_BIN);
     });
 
     schedule_and_run();
