@@ -17,6 +17,7 @@ mod buffer;
 #[derive(Debug)]
 pub enum Syscall {
     PrintHello { name: &'static str },
+    ExtendHeap { top: VirtAddr },
     Exit,
 }
 

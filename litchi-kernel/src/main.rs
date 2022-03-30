@@ -9,9 +9,9 @@
 
 extern crate alloc;
 
-mod allocator;
 mod frame_allocator;
 mod gdt;
+mod heap;
 mod interrupt;
 mod memory;
 mod qemu;
@@ -49,7 +49,7 @@ pub extern "C" fn _kernel_main(boot_info: *const BootInfo) -> ! {
     frame_allocator::init();
     memory::init();
     // interrupts::init_io_apic(); // TODO: need ACPI info
-    allocator::init();
+    heap::init();
 
     // Test interrupts
     instructions::interrupts::int3();

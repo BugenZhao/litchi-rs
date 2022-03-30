@@ -3,14 +3,17 @@ use core::sync::atomic::{AtomicU64, Ordering};
 use alloc::{collections::VecDeque, string::String};
 use lazy_static::lazy_static;
 use litchi_common::elf_loader::{ElfLoader, LoaderConfig};
-use litchi_user_common::syscall::{SYSCALL_BUFFER_PAGES, SYSCALL_IN_ADDR, SYSCALL_OUT_ADDR};
+use litchi_user_common::{
+    heap::USER_HEAP_BASE_ADDR,
+    syscall::{SYSCALL_BUFFER_PAGES, SYSCALL_IN_ADDR, SYSCALL_OUT_ADDR},
+};
 use log::{debug, info};
 use spin::Mutex;
 use x86_64::{
     instructions,
     structures::{
         idt::InterruptStackFrameValue,
-        paging::{Page, PageTableFlags},
+        paging::{Page, PageSize, PageTableFlags, Size4KiB},
     },
     VirtAddr,
 };
@@ -27,13 +30,18 @@ use super::TaskFrame;
 #[derive(Debug, Clone)]
 pub struct TaskInfo {
     pub id: u64,
+
     pub name: String,
 }
 
 #[derive(Debug)]
 struct Task {
     info: TaskInfo,
+
+    heap_top: VirtAddr,
+
     page_table: PageTableWrapper,
+
     frame: Option<TaskFrame>,
 }
 
@@ -122,6 +130,7 @@ impl TaskManager {
                 id: self.allocate_id(),
                 name,
             },
+            heap_top: USER_HEAP_BASE_ADDR,
             page_table,
             frame: Some(frame),
         };
@@ -182,6 +191,29 @@ impl TaskManager {
         let task = self.running.take().expect("no task running");
 
         info!("dropped current task: {:?}", task.info);
+    }
+
+    pub fn extend_heap(&mut self, top: VirtAddr) {
+        let top = top.align_up(Size4KiB::SIZE);
+        let task = self.running.as_mut().expect("no task running");
+
+        if top >= task.heap_top {
+            let base_page = Page::from_start_address(task.heap_top).unwrap();
+            let top_page = Page::from_start_address(top).unwrap();
+
+            let flags = PageTableFlags::PRESENT
+                | PageTableFlags::WRITABLE
+                | PageTableFlags::USER_ACCESSIBLE
+                | PageTableFlags::NO_EXECUTE;
+
+            unsafe {
+                for page in Page::range(base_page, top_page) {
+                    task.page_table.allocate_and_map_to(page, flags);
+                }
+            }
+        }
+
+        info!("extend heap to {:?} for task {}", top, task.info.id);
     }
 
     pub fn current_info(&self) -> Option<&TaskInfo> {

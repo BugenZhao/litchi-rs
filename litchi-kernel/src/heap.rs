@@ -1,10 +1,6 @@
-use alloc::{
-    alloc::{GlobalAlloc, Layout},
-    vec::Vec,
-};
+use alloc::vec::Vec;
 use core::{
     any::type_name_of_val,
-    ptr::null_mut,
     sync::atomic::{AtomicBool, Ordering},
 };
 use linked_list_allocator::LockedHeap;
@@ -16,18 +12,6 @@ use x86_64::{
 };
 
 use crate::memory::KERNEL_PAGE_TABLE;
-
-struct Dummy;
-
-unsafe impl GlobalAlloc for Dummy {
-    unsafe fn alloc(&self, _layout: Layout) -> *mut u8 {
-        null_mut()
-    }
-
-    unsafe fn dealloc(&self, _ptr: *mut u8, _layout: Layout) {
-        panic!("dealloc should be never called")
-    }
-}
 
 #[global_allocator]
 static ALLOCATOR: LockedHeap = LockedHeap::empty();

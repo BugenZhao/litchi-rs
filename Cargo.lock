@@ -130,7 +130,9 @@ dependencies = [
 name = "litchi-user"
 version = "0.1.0"
 dependencies = [
+ "linked_list_allocator",
  "litchi-user-common",
+ "x86_64",
 ]
 
 [[package]]

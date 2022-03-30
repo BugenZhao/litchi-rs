@@ -6,7 +6,7 @@ use x86_64::{
     PhysAddr,
 };
 
-use crate::allocator;
+use crate::heap;
 
 type UsableFrameIterator = impl Iterator<Item = PhysFrame>;
 
@@ -47,7 +47,7 @@ impl FrameDeallocator<Size4KiB> for GlobalFrameAllocator {
     unsafe fn deallocate_frame(&mut self, frame: PhysFrame<Size4KiB>) {
         let de = self.deallocated.get_or_insert_with(|| {
             assert!(
-                allocator::initialized(),
+                heap::initialized(),
                 "cannot deallocate frame when kernel heap allocator not initialized"
             );
             VecDeque::new()

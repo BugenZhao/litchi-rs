@@ -6,7 +6,7 @@ mod manager;
 pub use frame::{Registers, TaskFrame};
 
 pub use self::manager::schedule_and_run;
-pub use self::manager::with_task_manager;
+pub use self::manager::{with_task_manager, TaskManager};
 
 static EMBEDDED_USER_BIN: &[u8] = include_aligned!(
     Align4K,
