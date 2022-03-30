@@ -2,7 +2,7 @@ use litchi_user_common::syscall::{get_syscall, Syscall};
 use log::info;
 
 use crate::{
-    define_frame_saving_handler, print, println,
+    define_frame_saving_handler, print,
     task::{with_task_manager, TaskManager},
 };
 
@@ -14,7 +14,7 @@ fn syscall_inner() {
     info!("serving system call from {}", id);
 
     match unsafe { get_syscall() } {
-        Syscall::PrintHello { name } => println!("Hello, `{}`!", name),
+        Syscall::Print { args } => print!("{}", args),
 
         Syscall::ExtendHeap { top } => with_task_manager(|tm| tm.extend_heap(top)),
 

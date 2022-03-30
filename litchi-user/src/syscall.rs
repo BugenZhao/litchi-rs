@@ -1,8 +1,8 @@
 use litchi_user_common::syscall::{syscall, Syscall};
 use x86_64::VirtAddr;
 
-pub fn sys_print_hello(name: &'static str) {
-    unsafe { syscall(Syscall::PrintHello { name }) }
+pub fn sys_print(args: core::fmt::Arguments) {
+    unsafe { syscall(Syscall::Print { args }) }
 }
 
 pub fn sys_exit() -> ! {

@@ -33,7 +33,7 @@ impl SyscallInBuffer {
         asm!("int 114"); // SYSCALL_INTERRUPT
     }
 
-    pub(super) unsafe fn get(&self) -> Syscall {
+    pub(super) unsafe fn get(&self) -> Syscall<'static> {
         let mut syscall = MaybeUninit::uninit();
         core::ptr::copy_nonoverlapping(
             self.0.as_ptr(),

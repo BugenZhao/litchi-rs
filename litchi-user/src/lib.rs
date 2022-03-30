@@ -4,7 +4,8 @@
 
 extern crate alloc;
 
-pub mod heap;
+mod heap;
+pub mod print;
 pub mod syscall;
 
 use core::panic::PanicInfo;

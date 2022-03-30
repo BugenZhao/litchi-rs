@@ -15,8 +15,8 @@ pub const SYSCALL_BUFFER_BYTES: usize = (SYSCALL_BUFFER_PAGES * Size4KiB::SIZE) 
 mod buffer;
 
 #[derive(Debug)]
-pub enum Syscall {
-    PrintHello { name: &'static str },
+pub enum Syscall<'a> {
+    Print { args: core::fmt::Arguments<'a> },
     ExtendHeap { top: VirtAddr },
     Exit,
 }
@@ -30,6 +30,6 @@ pub unsafe fn syscall(syscall: Syscall) {
     SYSCALL_IN_BUFFER.lock().call(syscall)
 }
 
-pub unsafe fn get_syscall() -> Syscall {
+pub unsafe fn get_syscall() -> Syscall<'static> {
     SYSCALL_IN_BUFFER.lock().get()
 }
