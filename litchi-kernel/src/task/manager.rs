@@ -180,12 +180,16 @@ impl TaskManager {
         debug!("returned from user: {:?}, yield = {}", task, yield_task);
 
         if yield_task {
-            if self.ready.is_empty() {
-                debug!("empty ready queue, no need to yield");
-            } else {
-                let task = self.running.take().unwrap();
-                self.ready.push_back(task);
-            }
+            self.yield_current();
+        }
+    }
+
+    pub fn yield_current(&mut self) {
+        if self.ready.is_empty() {
+            debug!("empty ready queue, no need to yield");
+        } else {
+            let task = self.running.take().unwrap();
+            self.ready.push_back(task);
         }
     }
 

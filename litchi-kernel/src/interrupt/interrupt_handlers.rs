@@ -26,6 +26,11 @@ fn syscall_inner() {
 
         Syscall::GetTaskId => SyscallResponse::GetTaskId { task_id: id },
 
+        Syscall::Yield => {
+            with_task_manager(TaskManager::yield_current);
+            SyscallResponse::Ok
+        }
+
         Syscall::Exit => {
             with_task_manager(TaskManager::drop_current);
             SyscallResponse::Ok

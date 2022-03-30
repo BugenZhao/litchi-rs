@@ -15,6 +15,10 @@ pub fn sys_get_task_id() -> u64 {
         .unwrap()
 }
 
+pub fn sys_yield() {
+    unsafe { syscall(Syscall::Yield) };
+}
+
 pub fn sys_exit() -> ! {
     unsafe {
         syscall(Syscall::Exit);

@@ -20,6 +20,7 @@ pub enum Syscall<'a> {
     Print { args: core::fmt::Arguments<'a> },
     ExtendHeap { top: VirtAddr },
     GetTaskId,
+    Yield,
     Exit,
 }
 
