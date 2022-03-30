@@ -19,17 +19,17 @@ use x86_64::{
 
 use crate::{gdt::IstIndex, memory::KERNEL_PAGE_TABLE};
 
-mod interrupt_handlers;
 mod macros;
 mod trap_handlers;
+mod user_handlers;
 
 lazy_static! {
     static ref IDT: InterruptDescriptorTable = new_idt();
 }
 
 fn new_idt() -> InterruptDescriptorTable {
-    use interrupt_handlers::*;
     use trap_handlers::*;
+    use user_handlers::*;
 
     let mut idt = InterruptDescriptorTable::new();
 
@@ -47,7 +47,12 @@ fn new_idt() -> InterruptDescriptorTable {
     }
 
     // Page fault
-    idt.page_fault.set_handler_fn(page_fault);
+    unsafe {
+        idt.page_fault
+            .set_handler_fn(page_fault)
+            .set_privilege_level(PrivilegeLevel::Ring3)
+            .set_stack_index(IstIndex::UserInterrupt as u16);
+    }
 
     // APIC Timer
     unsafe {

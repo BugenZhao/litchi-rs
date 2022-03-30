@@ -1,9 +1,15 @@
 use litchi_user_common::syscall::{self, Syscall, SyscallResponse};
-use log::info;
+use log::{error, info, warn};
+use x86_64::{
+    registers::segmentation::SegmentSelector,
+    structures::idt::{InterruptStackFrame, PageFaultErrorCode},
+    PrivilegeLevel,
+};
 
 use crate::{
     define_frame_saving_handler, print,
-    task::{with_task_manager, TaskManager},
+    qemu::{exit, ExitCode},
+    task::{schedule_and_run, with_task_manager, TaskManager},
 };
 
 define_frame_saving_handler! { syscall, syscall_inner }
@@ -49,4 +55,31 @@ fn apic_timer_inner() {
     unsafe {
         super::LOCAL_APIC.lock().end_of_interrupt();
     }
+}
+
+pub extern "x86-interrupt" fn page_fault(
+    stack_frame: InterruptStackFrame,
+    error_code: PageFaultErrorCode,
+) {
+    // We're not saving the task frame for this, since we're gonna kill it.
+
+    let pl = SegmentSelector(stack_frame.code_segment as u16).rpl();
+    if pl == PrivilegeLevel::Ring0 {
+        error!(
+            "kernel page fault: frame {:?}, error code: {:?}",
+            stack_frame, error_code
+        );
+        exit(ExitCode::Failed)
+    }
+
+    with_task_manager(|tm| {
+        let current_task = tm.current_info().unwrap().clone();
+        warn!(
+            "task page fault, kill it: {:?}, frame {:?}, error code: {:?}",
+            current_task, stack_frame, error_code
+        );
+        tm.drop_current();
+    });
+
+    schedule_and_run();
 }

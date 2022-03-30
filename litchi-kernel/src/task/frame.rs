@@ -1,6 +1,6 @@
 use core::arch::asm;
 
-use log::{debug};
+use log::debug;
 use x86_64::{
     registers::{
         self,

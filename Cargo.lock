@@ -136,6 +136,7 @@ dependencies = [
  "litchi-common",
  "litchi-user-common",
  "log",
+ "paste",
  "seq-macro",
  "size_format",
  "spin 0.9.2",
