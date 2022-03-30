@@ -5,7 +5,7 @@ use lazy_static::lazy_static;
 use litchi_common::elf_loader::{ElfLoader, LoaderConfig};
 use litchi_user_common::{
     heap::USER_HEAP_BASE_ADDR,
-    syscall::{SYSCALL_BUFFER_PAGES, SYSCALL_IN_ADDR, SYSCALL_OUT_ADDR},
+    syscall::buffer::{SYSCALL_BUFFER_PAGES, SYSCALL_IN_ADDR, SYSCALL_OUT_ADDR},
 };
 use log::{debug, info, warn};
 use spin::Mutex;

@@ -4,9 +4,20 @@ use core::{
     mem::{size_of, MaybeUninit},
 };
 
-use super::{Syscall, SyscallResponse, SYSCALL_BUFFER_BYTES, SYSCALL_IN_ADDR, SYSCALL_OUT_ADDR};
+use super::{Syscall, SyscallResponse};
 use spin::Mutex;
-use x86_64::VirtAddr;
+use x86_64::{
+    structures::paging::{PageSize, Size4KiB},
+    VirtAddr,
+};
+
+pub const SYSCALL_IN_ADDR: VirtAddr = VirtAddr::new_truncate(0x1333_0000_0000);
+pub const SYSCALL_OUT_ADDR: VirtAddr = VirtAddr::new_truncate(0x1334_0000_0000);
+pub const SYSCALL_BUFFER_PAGES: u64 = 1;
+pub const SYSCALL_BUFFER_BYTES: usize = (SYSCALL_BUFFER_PAGES * Size4KiB::SIZE) as usize;
+
+static_assertions::const_assert!(SYSCALL_BUFFER_BYTES >= size_of::<Syscall>());
+static_assertions::const_assert!(SYSCALL_BUFFER_BYTES >= size_of::<SyscallResponse>());
 
 pub struct In;
 pub struct Out;

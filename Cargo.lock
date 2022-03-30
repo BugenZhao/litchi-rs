@@ -160,6 +160,7 @@ dependencies = [
  "enum-as-inner",
  "lazy_static",
  "spin 0.9.2",
+ "static_assertions",
  "x86_64",
 ]
 
@@ -323,6 +324,12 @@ checksum = "75adad84ee84b521fb2cca2d4fd0f1dab1d8d026bda3c5bea4ca63b5f9f9293c"
 dependencies = [
  "lock_api",
 ]
+
+[[package]]
+name = "static_assertions"
+version = "1.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f"
 
 [[package]]
 name = "syn"

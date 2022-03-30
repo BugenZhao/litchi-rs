@@ -9,4 +9,5 @@ edition = "2021"
 enum-as-inner = "0.4"
 lazy_static = { version = "1.4", features = ["spin_no_std"] }
 spin = "0.9"
+static_assertions = "1.1"
 x86_64 = "0.14"

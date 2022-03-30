@@ -1,19 +1,11 @@
 use enum_as_inner::EnumAsInner;
-use x86_64::{
-    structures::paging::{PageSize, Size4KiB},
-    VirtAddr,
-};
+use x86_64::VirtAddr;
 
 use self::buffer::{SYSCALL_IN_BUFFER, SYSCALL_OUT_BUFFER};
 
+pub mod buffer;
+
 pub const SYSCALL_INTERRUPT: u8 = 114;
-
-pub const SYSCALL_IN_ADDR: VirtAddr = VirtAddr::new_truncate(0x1333_0000_0000);
-pub const SYSCALL_OUT_ADDR: VirtAddr = VirtAddr::new_truncate(0x1334_0000_0000);
-pub const SYSCALL_BUFFER_PAGES: u64 = 10;
-pub const SYSCALL_BUFFER_BYTES: usize = (SYSCALL_BUFFER_PAGES * Size4KiB::SIZE) as usize;
-
-mod buffer;
 
 #[derive(Debug)]
 pub enum Syscall<'a> {
