@@ -1,7 +1,7 @@
 use core::intrinsics::copy_nonoverlapping;
 
 use itertools::{EitherOrBoth, Itertools};
-use log::info;
+use log::{info, debug};
 use x86_64::{
     structures::paging::{
         FrameAllocator, Mapper, OffsetPageTable, Page, PageSize, PageTableFlags, PhysFrame,
@@ -128,7 +128,7 @@ where
                             .expect("failed to map page")
                             .flush();
 
-                        info!("mapped bss {:?} to {:?}", page, new_frame);
+                        debug!("mapped bss {:?} to {:?}", page, new_frame);
                     }
                 }
             } else {
@@ -147,7 +147,7 @@ where
                             .expect("failed to map page")
                             .flush();
 
-                        info!("mapped {:?} to {:?}", page, frame);
+                        debug!("mapped {:?} to {:?}", page, frame);
                     }
                 }
             }
@@ -176,7 +176,7 @@ where
                     .expect("failed to map page")
                     .flush();
 
-                info!("mapped {:?} to {:?}", page, frame);
+                debug!("mapped {:?} to {:?}", page, frame);
             }
         }
 
