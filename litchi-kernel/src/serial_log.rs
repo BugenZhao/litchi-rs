@@ -68,5 +68,5 @@ impl log::Log for SerialLogger {
 
 pub fn init() {
     log::set_logger(&LOGGER).expect("failed to init serial logger");
-    log::set_max_level(log::LevelFilter::Debug);
+    log::set_max_level(log::LevelFilter::Info);
 }

@@ -31,7 +31,7 @@ static BOOT_INFO: Once<&'static BootInfo> = Once::new();
 
 #[allow(unreachable_code)]
 #[no_mangle]
-pub extern "C" fn _kernel_main(boot_info: *const BootInfo) {
+pub extern "C" fn _kernel_main(boot_info: *const BootInfo) -> ! {
     // Initialize serial logger
     serial_log::init();
     info!("Hello, the Litchi kernel!");
@@ -52,17 +52,10 @@ pub extern "C" fn _kernel_main(boot_info: *const BootInfo) {
     allocator::init();
 
     // Test interrupts
-    interrupt::enable();
     instructions::interrupts::int3();
 
+    // interrupt::enable(); // Enable it on first task.
     task::run();
-
-    // Idle
-    loop {
-        instructions::hlt();
-    }
-
-    exit(ExitCode::Success);
 }
 
 fn memory_check() {

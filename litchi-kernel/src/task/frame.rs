@@ -1,12 +1,13 @@
 use core::arch::asm;
 
-use log::info;
+use log::{debug};
 use x86_64::{
     registers::{
         self,
         segmentation::{Segment, SegmentSelector},
     },
     structures::idt::InterruptStackFrameValue,
+    PrivilegeLevel,
 };
 
 #[repr(C)]
@@ -39,12 +40,16 @@ pub struct TaskFrame {
 }
 
 impl TaskFrame {
+    pub fn is_user(&self) -> bool {
+        SegmentSelector(self.frame.code_segment as u16).rpl() == PrivilegeLevel::Ring3
+    }
+
     pub unsafe fn pop(self) -> ! {
         // Manually set ds & es here, since I don't know how to write in inline assembly :(
         registers::segmentation::DS::set_reg(SegmentSelector(self.ds as u16));
         registers::segmentation::ES::set_reg(SegmentSelector(self.es as u16));
 
-        info!("loaded ds = {}, es = {}", self.ds, self.es);
+        debug!("loaded ds = {}, es = {}", self.ds, self.es);
 
         asm!(
             "mov    rsp, {}",

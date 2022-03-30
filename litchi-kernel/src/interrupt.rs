@@ -19,6 +19,7 @@ use x86_64::{
 use crate::{gdt::IstIndex, memory::KERNEL_PAGE_TABLE};
 
 mod interrupt_handlers;
+mod macros;
 mod trap_handlers;
 
 lazy_static! {
@@ -50,14 +51,14 @@ fn new_idt() -> InterruptDescriptorTable {
     // APIC Timer
     unsafe {
         idt[UserInterrupt::ApicTimer.as_index()]
-            .set_handler_fn(reg_preserving_apic_timer)
+            .set_handler_fn(apic_timer)
             .set_stack_index(IstIndex::UserInterrupt as u16);
     }
 
     // Print hello
     unsafe {
         idt[UserInterrupt::PrintHello.as_index()]
-            .set_handler_fn(reg_preserving_print_hello)
+            .set_handler_fn(print_hello)
             .set_privilege_level(PrivilegeLevel::Ring3)
             .set_stack_index(IstIndex::UserInterrupt as u16);
     }
@@ -100,7 +101,7 @@ fn new_local_apic() -> LocalApic {
             .error_vector(UserInterrupt::ApicError.as_index())
             .spurious_vector(UserInterrupt::ApicSpurious.as_index())
             .timer_vector(UserInterrupt::ApicTimer.as_index())
-            .timer_initial(10_000_000 * 10)
+            .timer_initial(10_000_000 * 100)
             .set_xapic_base(lapic::xapic_base())
             .build()
             .expect("failed to build lapic")
@@ -144,6 +145,7 @@ pub fn init_io_apic() {
     }
 }
 
+#[allow(dead_code)]
 pub fn enable() {
     instructions::interrupts::enable();
     info!("enabled interrupts");

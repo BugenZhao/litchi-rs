@@ -3,21 +3,34 @@ use core::sync::atomic::{AtomicU64, Ordering};
 use alloc::{collections::VecDeque, string::String};
 use lazy_static::lazy_static;
 use litchi_common::elf_loader::{ElfLoader, LoaderConfig};
-use log::info;
+use log::{debug, info};
 use spin::Mutex;
-use x86_64::{structures::idt::InterruptStackFrameValue, VirtAddr};
+use x86_64::{instructions, structures::idt::InterruptStackFrameValue, VirtAddr};
 
 use crate::{
     gdt::GDT,
     memory::PageTableWrapper,
     qemu::{exit, ExitCode},
-    task::{Registers, Task},
+    task::frame::Registers,
 };
 
 use super::TaskFrame;
 
+#[derive(Debug, Clone)]
+pub struct TaskInfo {
+    pub id: u64,
+    pub name: String,
+}
+
+#[derive(Debug)]
+struct Task {
+    info: TaskInfo,
+    page_table: PageTableWrapper,
+    frame: Option<TaskFrame>,
+}
+
 lazy_static! {
-    pub static ref TASK_MANAGER: Mutex<TaskManager> = Mutex::new(TaskManager::new());
+    static ref TASK_MANAGER: Mutex<TaskManager> = Mutex::new(TaskManager::new());
 }
 
 pub struct TaskManager {
@@ -75,14 +88,17 @@ impl TaskManager {
                 instruction_pointer: VirtAddr::from_ptr(entry_point),
                 code_segment,
                 cpu_flags: 0x0000_0200, // enable interrupts
+                // cpu_flags: 0,
                 stack_pointer: USER_STACK_TOP,
                 stack_segment: data_segment,
             },
         };
 
         let task = Task {
-            id: self.allocate_id(),
-            name,
+            info: TaskInfo {
+                id: self.allocate_id(),
+                name,
+            },
             page_table,
             frame: Some(frame),
         };
@@ -95,7 +111,7 @@ impl TaskManager {
         if self.running.is_none() {
             if let Some(task) = self.ready.pop_front() {
                 task.page_table.load();
-                info!("loaded page table: {:?}", task.page_table);
+                debug!("loaded page table: {:?}", task.page_table);
 
                 self.running = Some(task);
             } else {
@@ -107,7 +123,53 @@ impl TaskManager {
         let task = self.running.as_mut().unwrap();
         assert!(task.page_table.is_current());
 
-        info!("scheduled: {:?}", task);
+        info!("scheduled: {:?}", task.info);
+        debug!("scheduled: {:?}", task);
+
         task.frame.take().expect("no frame for task")
     }
+
+    pub fn put_back(&mut self, frame: TaskFrame) {
+        if !frame.is_user() {
+            debug!("frame not from user, ignored");
+            return;
+        }
+
+        let task = self.running.as_mut().expect("no task running");
+        let old_frame = task.frame.replace(frame);
+        assert!(old_frame.is_none(), "replace task frame");
+
+        info!("return from user: {:?}", task.info);
+        debug!("returned from user: {:?}", task);
+    }
+
+    pub fn put_back_and_yield(&mut self, frame: TaskFrame) {
+        self.put_back(frame);
+
+        if self.ready.is_empty() {
+            debug!("empty ready queue, no need to yield");
+        } else {
+            let task = self.running.take().unwrap();
+            self.ready.push_back(task);
+        }
+    }
+
+    pub fn current_info(&self) -> Option<&TaskInfo> {
+        self.running.as_ref().map(|task| &task.info)
+    }
+}
+
+pub fn with_task_manager<F, R>(f: F) -> R
+where
+    F: FnOnce(&mut TaskManager) -> R,
+{
+    instructions::interrupts::without_interrupts(|| {
+        let mut task_manager = TASK_MANAGER.lock();
+        f(&mut *task_manager)
+    })
+}
+
+pub fn schedule_and_run() -> ! {
+    let task_frame = with_task_manager(TaskManager::schedule);
+    unsafe { task_frame.pop() }
 }
