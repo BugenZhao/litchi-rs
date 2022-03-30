@@ -19,3 +19,4 @@ x2apic = "0.4"
 x86_64 = "0.14"
 
 litchi-common = { path = "../litchi-common"}
+litchi-user-common = { path = "../litchi-user-common" }

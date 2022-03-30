@@ -1,6 +1,7 @@
 use core::ops::Deref;
 
 use lazy_static::lazy_static;
+use litchi_user_common::syscall::SYSCALL_INTERRUPT;
 use log::info;
 use spin::Mutex;
 use x2apic::{
@@ -55,10 +56,10 @@ fn new_idt() -> InterruptDescriptorTable {
             .set_stack_index(IstIndex::UserInterrupt as u16);
     }
 
-    // Print hello
+    // Syscall
     unsafe {
-        idt[UserInterrupt::PrintHello.as_index()]
-            .set_handler_fn(print_hello)
+        idt[UserInterrupt::Syscall.as_index()]
+            .set_handler_fn(syscall)
             .set_privilege_level(PrivilegeLevel::Ring3)
             .set_stack_index(IstIndex::UserInterrupt as u16);
     }
@@ -76,7 +77,7 @@ pub enum UserInterrupt {
     ApicError = USER_INTERRUPT_OFFSET + 19,
     ApicSpurious = USER_INTERRUPT_OFFSET + 31,
 
-    PrintHello = USER_INTERRUPT_OFFSET + 66,
+    Syscall = SYSCALL_INTERRUPT,
 
     Serial = IO_APIC_INTERRUPT_OFFSET + 4,
 }

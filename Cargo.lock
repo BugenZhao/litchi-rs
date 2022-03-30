@@ -116,6 +116,7 @@ dependencies = [
  "lazy_static",
  "linked_list_allocator",
  "litchi-common",
+ "litchi-user-common",
  "log",
  "seq-macro",
  "size_format",
@@ -128,6 +129,18 @@ dependencies = [
 [[package]]
 name = "litchi-user"
 version = "0.1.0"
+dependencies = [
+ "litchi-user-common",
+]
+
+[[package]]
+name = "litchi-user-common"
+version = "0.1.0"
+dependencies = [
+ "lazy_static",
+ "spin 0.9.2",
+ "x86_64",
+]
 
 [[package]]
 name = "lock_api"

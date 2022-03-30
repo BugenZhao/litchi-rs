@@ -1,7 +1,13 @@
 cargo-features = ["strip"]
 
 [workspace]
-members = ["litchi-boot", "litchi-common", "litchi-kernel", "litchi-user"]
+members = [
+    "litchi-boot",
+    "litchi-common",
+    "litchi-kernel",
+    "litchi-user",
+    "litchi-user-common",
+]
 
 [profile.dev]
 panic = "abort"
