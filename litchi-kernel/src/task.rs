@@ -10,12 +10,12 @@ pub use self::manager::{with_task_manager, TaskManager};
 
 static LOOP_BIN: &[u8] = include_aligned!(
     Align4K,
-    "../../target/x86_64-unknown-litchi-user/debug/loop"
+    "../../target/x86_64-unknown-litchi-user/debug/loop.lit"
 );
 
 static EVIL_HEAP_BIN: &[u8] = include_aligned!(
     Align4K,
-    "../../target/x86_64-unknown-litchi-user/debug/evil_heap"
+    "../../target/x86_64-unknown-litchi-user/debug/evil_heap.lit"
 );
 
 pub fn run() -> ! {
