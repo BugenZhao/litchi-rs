@@ -14,15 +14,14 @@ use x86_64::{
     },
 };
 
-use crate::{
-    frame_allocator::{BootInfoFrameAllocator, FRAME_ALLOCATOR},
-    BOOT_INFO,
-};
+use crate::{frame_allocator::RaiiFrameAllocator, BOOT_INFO};
 
 pub struct PageTableWrapper {
     frame: PhysFrame,
 
     inner: Mutex<OffsetPageTable<'static>>,
+
+    allocator: Mutex<RaiiFrameAllocator>,
 }
 
 impl core::fmt::Debug for PageTableWrapper {
@@ -35,7 +34,7 @@ impl core::fmt::Debug for PageTableWrapper {
 }
 
 impl PageTableWrapper {
-    fn from_frame(frame: PhysFrame) -> Self {
+    fn new(frame: PhysFrame, allocator: RaiiFrameAllocator) -> Self {
         let boot_info = BOOT_INFO.get().expect("boot info not set");
 
         let l4_table = frame.start_address().as_u64() as *mut PageTable;
@@ -47,24 +46,22 @@ impl PageTableWrapper {
         Self {
             frame,
             inner: Mutex::new(inner),
+            allocator: Mutex::new(allocator),
         }
     }
 
     fn kernel() -> Self {
         let current_frame = registers::control::Cr3::read().0;
 
-        Self::from_frame(current_frame)
+        Self::new(current_frame, RaiiFrameAllocator::new_untraced())
     }
 
     pub fn new_user() -> Self {
-        let frame = instructions::interrupts::without_interrupts(|| {
-            FRAME_ALLOCATOR
-                .get()
-                .expect("frame allocator not initialized")
-                .lock()
-                .allocate_frame()
-                .expect("failed to allocate frame for new page table")
-        });
+        let mut allocator = RaiiFrameAllocator::new_traced();
+
+        let frame = allocator
+            .allocate_frame()
+            .expect("failed to allocate frame for new page table");
 
         // Copy mapping for kernel.
         // TODO: This requires memory space used for kernel should not overlap with users.
@@ -76,7 +73,7 @@ impl PageTableWrapper {
             );
         }
 
-        Self::from_frame(frame)
+        Self::new(frame, allocator)
     }
 
     pub fn load(&self) {
@@ -91,16 +88,13 @@ impl PageTableWrapper {
 
     pub fn with_allocator<F, R>(&self, f: F) -> R
     where
-        F: FnOnce(&mut BootInfoFrameAllocator, &mut OffsetPageTable<'static>) -> R,
+        F: FnOnce(&mut RaiiFrameAllocator, &mut OffsetPageTable<'static>) -> R,
     {
         instructions::interrupts::without_interrupts(|| {
-            let mut frame_allocator = FRAME_ALLOCATOR
-                .get()
-                .expect("frame allocator not initialized")
-                .lock();
+            let mut allocator = self.allocator.lock();
             let mut page_table = self.inner.lock();
 
-            f(&mut *frame_allocator, &mut *page_table)
+            f(&mut *allocator, &mut *page_table)
         })
     }
 
