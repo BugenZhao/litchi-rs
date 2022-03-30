@@ -12,7 +12,7 @@ extern crate alloc;
 mod allocator;
 mod frame_allocator;
 mod gdt;
-mod interrupts;
+mod interrupt;
 mod memory;
 mod qemu;
 mod serial_log;
@@ -45,14 +45,14 @@ pub extern "C" fn _kernel_main(boot_info: *const BootInfo) {
 
     // Initialize functionalities
     gdt::init();
-    interrupts::init();
+    interrupt::init();
     frame_allocator::init();
     memory::init();
     // interrupts::init_io_apic(); // TODO: need ACPI info
     allocator::init();
 
     // Test interrupts
-    interrupts::enable();
+    interrupt::enable();
     instructions::interrupts::int3();
 
     task::run();

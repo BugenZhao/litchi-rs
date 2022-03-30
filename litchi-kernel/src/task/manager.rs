@@ -11,7 +11,7 @@ use crate::{
     gdt::GDT,
     memory::PageTableWrapper,
     qemu::{exit, ExitCode},
-    task::Registers,
+    task::{Registers, Task},
 };
 
 use super::TaskFrame;
@@ -110,12 +110,4 @@ impl TaskManager {
         info!("scheduled: {:?}", task);
         task.frame.take().expect("no frame for task")
     }
-}
-
-#[derive(Debug)]
-pub struct Task {
-    pub id: u64,
-    pub name: String,
-    pub page_table: PageTableWrapper,
-    pub frame: Option<TaskFrame>,
 }

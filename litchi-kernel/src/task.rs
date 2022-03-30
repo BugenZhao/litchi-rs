@@ -1,11 +1,22 @@
 use align_data::{include_aligned, Align4K};
 
 mod frame;
-mod task;
+mod manager;
 
+use alloc::string::String;
 pub use frame::{Registers, TaskFrame};
 
-use self::task::TASK_MANAGER;
+use crate::memory::PageTableWrapper;
+
+use self::manager::TASK_MANAGER;
+
+#[derive(Debug)]
+pub struct Task {
+    pub id: u64,
+    pub name: String,
+    pub page_table: PageTableWrapper,
+    pub frame: Option<TaskFrame>,
+}
 
 static EMBEDDED_USER_BIN: &[u8] = include_aligned!(
     Align4K,
