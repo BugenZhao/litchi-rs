@@ -12,7 +12,7 @@ fn syscall_inner() {
 
     match unsafe { get_syscall() } {
         Syscall::PrintHello { name } => println!("Hello, `{}`!", name),
-        Syscall::Exit => unimplemented!(),
+        Syscall::Exit => with_task_manager(|task_manager| task_manager.drop_current()),
     }
 }
 

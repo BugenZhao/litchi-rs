@@ -178,6 +178,12 @@ impl TaskManager {
         }
     }
 
+    pub fn drop_current(&mut self) {
+        let task = self.running.take().expect("no task running");
+
+        info!("dropped current task: {:?}", task.info);
+    }
+
     pub fn current_info(&self) -> Option<&TaskInfo> {
         self.running.as_ref().map(|task| &task.info)
     }
