@@ -25,6 +25,15 @@ pub struct PageTableWrapper {
     inner: Mutex<OffsetPageTable<'static>>,
 }
 
+impl core::fmt::Debug for PageTableWrapper {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.write_fmt(format_args!(
+            "PageTable at {:?}",
+            self.frame.start_address()
+        ))
+    }
+}
+
 impl PageTableWrapper {
     fn from_frame(frame: PhysFrame) -> Self {
         let boot_info = BOOT_INFO.get().expect("boot info not set");
@@ -74,6 +83,10 @@ impl PageTableWrapper {
         unsafe {
             Cr3::write(self.frame, Cr3Flags::empty());
         }
+    }
+
+    pub fn is_current(&self) -> bool {
+        Cr3::read().0 == self.frame
     }
 
     pub fn with_allocator<F, R>(&self, f: F) -> R

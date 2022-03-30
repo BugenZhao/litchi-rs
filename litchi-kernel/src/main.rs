@@ -55,7 +55,7 @@ pub extern "C" fn _kernel_main(boot_info: *const BootInfo) {
     interrupts::enable();
     instructions::interrupts::int3();
 
-    task::init();
+    task::run();
 
     // Idle
     loop {
