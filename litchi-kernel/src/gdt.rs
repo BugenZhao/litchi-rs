@@ -19,8 +19,17 @@ pub enum IstIndex {
 const INTERRUPT_STACK_SIZE: usize = 4096 * 5;
 
 // Note: avoid declaring as &[u8] here.
-static DOUBLE_FAULT_STACK: [u8; INTERRUPT_STACK_SIZE] = [0; INTERRUPT_STACK_SIZE];
-static USER_INTERRUPT_STACK: [u8; INTERRUPT_STACK_SIZE] = [0; INTERRUPT_STACK_SIZE];
+#[repr(C, align(4096))]
+struct TrapStack([u8; INTERRUPT_STACK_SIZE]);
+
+impl TrapStack {
+    const fn new() -> Self {
+        Self([0; INTERRUPT_STACK_SIZE])
+    }
+}
+
+static DOUBLE_FAULT_STACK: TrapStack = TrapStack::new();
+static USER_INTERRUPT_STACK: TrapStack = TrapStack::new();
 
 lazy_static! {
     static ref KERNEL_TSS: TaskStateSegment = new_kernel_tss();
@@ -30,19 +39,19 @@ fn new_kernel_tss() -> TaskStateSegment {
     let mut tss = TaskStateSegment::new();
 
     tss.interrupt_stack_table[IstIndex::DoubleFault as usize] = {
-        let stack_top = DOUBLE_FAULT_STACK.as_ptr_range().end;
+        let stack_top = DOUBLE_FAULT_STACK.0.as_ptr_range().end;
         debug!(
             "stack for double fault: {:?}",
-            DOUBLE_FAULT_STACK.as_ptr_range()
+            DOUBLE_FAULT_STACK.0.as_ptr_range()
         );
         VirtAddr::from_ptr(stack_top)
     };
 
     tss.interrupt_stack_table[IstIndex::UserInterrupt as usize] = {
-        let stack_top = USER_INTERRUPT_STACK.as_ptr_range().end;
+        let stack_top = USER_INTERRUPT_STACK.0.as_ptr_range().end;
         debug!(
             "stack for user interrupt: {:?}",
-            USER_INTERRUPT_STACK.as_ptr_range()
+            USER_INTERRUPT_STACK.0.as_ptr_range()
         );
         VirtAddr::from_ptr(stack_top)
     };
