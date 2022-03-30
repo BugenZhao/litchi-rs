@@ -9,7 +9,7 @@ pub const SYSCALL_INTERRUPT: u8 = 114;
 
 #[derive(Debug)]
 pub enum Syscall<'a> {
-    Print { args: core::fmt::Arguments<'a> },
+    Print { str: &'a str },
     ExtendHeap { top: VirtAddr },
     GetTaskId,
     Yield,

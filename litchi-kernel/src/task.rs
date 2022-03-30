@@ -20,17 +20,23 @@ macro_rules! include_binary {
     };
 }
 
-include_binary!(evil_memory_access);
+include_binary!(evil_memory_access_1);
+include_binary!(evil_memory_access_2);
+include_binary!(evil_memory_access_3);
+include_binary!(evil_memory_access_4);
 include_binary!(evil_heap);
 include_binary!(loop);
 
 pub fn run() -> ! {
     with_task_manager(|task_manager| {
         task_manager.load_user("evil_heap", EVIL_HEAP_BIN);
+        task_manager.load_user("evil_memory_access_1", EVIL_MEMORY_ACCESS_1_BIN);
+        task_manager.load_user("evil_memory_access_2", EVIL_MEMORY_ACCESS_2_BIN);
+        task_manager.load_user("evil_memory_access_3", EVIL_MEMORY_ACCESS_3_BIN);
+        task_manager.load_user("evil_memory_access_4", EVIL_MEMORY_ACCESS_4_BIN);
         task_manager.load_user("loop1", LOOP_BIN);
         task_manager.load_user("loop2", LOOP_BIN);
         task_manager.load_user("loop3", LOOP_BIN);
-        task_manager.load_user("evil_memory_access", EVIL_MEMORY_ACCESS_BIN);
     });
 
     schedule_and_run();

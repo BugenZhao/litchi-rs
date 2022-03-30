@@ -9,9 +9,10 @@ use x86_64::{
         control::{Cr3, Cr3Flags},
     },
     structures::paging::{
-        FrameAllocator, Mapper, OffsetPageTable, Page, PageSize, PageTable, PageTableFlags,
-        PhysFrame,
+        mapper::TranslateResult, FrameAllocator, Mapper, OffsetPageTable, Page, PageSize,
+        PageTable, PageTableFlags, PhysFrame, Size4KiB, Translate,
     },
+    VirtAddr,
 };
 
 use crate::{frame_allocator::RaiiFrameAllocator, BOOT_INFO};
@@ -128,6 +129,33 @@ impl PageTableWrapper {
                 .flush();
 
             Some(frame)
+        })
+    }
+
+    pub fn check_user_accessible(&self, base: *const (), len: usize) -> bool {
+        if len == 0 {
+            return true;
+        }
+
+        self.with_allocator(|_, page_table| {
+            let base = VirtAddr::from_ptr(base);
+            let base_page = Page::<Size4KiB>::containing_address(base);
+            let end_page = Page::containing_address(base + (len - 1));
+
+            for page in Page::range_inclusive(base_page, end_page) {
+                let check_addr = page.start_address();
+
+                match page_table.translate(check_addr) {
+                    TranslateResult::Mapped { flags, .. }
+                        if flags.contains(PageTableFlags::USER_ACCESSIBLE) => {}
+
+                    TranslateResult::Mapped { .. }
+                    | TranslateResult::NotMapped
+                    | TranslateResult::InvalidFrameAddress(_) => return false,
+                }
+            }
+
+            true
         })
     }
 }

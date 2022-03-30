@@ -1,8 +1,8 @@
 use litchi_user_common::syscall::{syscall, Syscall};
 use x86_64::VirtAddr;
 
-pub fn sys_print(args: core::fmt::Arguments) {
-    unsafe { syscall(Syscall::Print { args }) };
+pub fn sys_print(str: &str) {
+    unsafe { syscall(Syscall::Print { str }) };
 }
 
 pub fn sys_extend_heap(top: VirtAddr) {

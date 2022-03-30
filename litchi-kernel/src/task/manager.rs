@@ -247,6 +247,10 @@ impl TaskManager {
     pub fn current_info(&self) -> Option<&TaskInfo> {
         self.running.as_ref().map(|task| &task.info)
     }
+
+    pub fn current_page_table(&self) -> Option<&PageTableWrapper> {
+        self.running.as_ref().map(|task| &task.page_table)
+    }
 }
 
 pub fn with_task_manager<F, R>(f: F) -> R

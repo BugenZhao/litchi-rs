@@ -15,5 +15,10 @@ macro_rules! println {
 }
 
 pub fn _print(args: ::core::fmt::Arguments) {
-    sys_print(args);
+    if let Some(str) = args.as_str() {
+        sys_print(str);
+    } else {
+        let string = ::alloc::format!("{}", args);
+        sys_print(&string);
+    }
 }

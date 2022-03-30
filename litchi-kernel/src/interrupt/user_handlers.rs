@@ -20,8 +20,26 @@ fn syscall_inner() {
     info!("serving system call from {}", id);
 
     let response = match unsafe { syscall::get_syscall() } {
-        Syscall::Print { args } => {
-            print!("{}", args);
+        Syscall::Print { str } => {
+            let bytes = str.as_bytes();
+            let legal = with_task_manager(|tm| {
+                let page_table = tm.current_page_table().unwrap();
+                page_table.check_user_accessible(bytes.as_ptr() as *const (), bytes.len())
+            });
+
+            if legal {
+                print!("{}", str);
+            } else {
+                with_task_manager(|tm| {
+                    let current_task = tm.current_info().unwrap().clone();
+                    warn!(
+                        "illegal access for printing, killed it: {:?}, bytes {:?}",
+                        current_task,
+                        bytes.as_ptr_range()
+                    );
+                    tm.drop_current();
+                });
+            }
             SyscallResponse::Ok
         }
 
