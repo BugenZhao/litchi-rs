@@ -3,7 +3,7 @@ use x86_64::{
     VirtAddr,
 };
 
-use self::buffer::SYSCALL_IN_BUFFER;
+use self::buffer::{SYSCALL_IN_BUFFER, SYSCALL_OUT_BUFFER};
 
 pub const SYSCALL_INTERRUPT: u8 = 114;
 
@@ -18,18 +18,31 @@ mod buffer;
 pub enum Syscall<'a> {
     Print { args: core::fmt::Arguments<'a> },
     ExtendHeap { top: VirtAddr },
+    GetTaskId,
     Exit,
 }
 
 #[derive(Debug)]
 pub enum SyscallResponse {
-    PrintHello { task_id: u64 },
+    Ok,
+    GetTaskId { task_id: u64 },
 }
 
-pub unsafe fn syscall(syscall: Syscall) {
-    SYSCALL_IN_BUFFER.lock().call(syscall)
+// For user
+//
+
+pub unsafe fn syscall(syscall: Syscall) -> SyscallResponse {
+    SYSCALL_IN_BUFFER.lock().call(syscall);
+    SYSCALL_OUT_BUFFER.lock().get_response()
 }
+
+// For kernel
+//
 
 pub unsafe fn get_syscall() -> Syscall<'static> {
-    SYSCALL_IN_BUFFER.lock().get()
+    SYSCALL_IN_BUFFER.lock().get_syscall()
+}
+
+pub unsafe fn response(response: SyscallResponse) {
+    SYSCALL_OUT_BUFFER.lock().response(response);
 }

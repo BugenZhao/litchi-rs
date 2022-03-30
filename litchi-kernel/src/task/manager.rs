@@ -20,7 +20,7 @@ use x86_64::{
 
 use crate::{
     gdt::GDT,
-    memory::PageTableWrapper,
+    memory::{PageTableWrapper, KERNEL_PAGE_TABLE},
     qemu::{exit, ExitCode},
     task::frame::Registers,
 };
@@ -190,8 +190,9 @@ impl TaskManager {
     }
 
     pub fn drop_current(&mut self) {
-        let task = self.running.take().expect("no task running");
+        KERNEL_PAGE_TABLE.load();
 
+        let task = self.running.take().expect("no task running");
         info!("dropped current task: {:?}", task.info);
     }
 
@@ -228,8 +229,15 @@ impl TaskManager {
             self.drop_current();
         } else {
             task.heap_top = top;
-            info!("extend heap to {:?} for task {}", task.heap_top, task.info.id);
+            info!(
+                "extend heap to {:?} for task {}",
+                task.heap_top, task.info.id
+            );
         }
+    }
+
+    pub fn has_running(&self) -> bool {
+        self.running.is_some()
     }
 
     pub fn current_info(&self) -> Option<&TaskInfo> {

@@ -2,11 +2,12 @@
 #![no_main]
 #![feature(default_alloc_error_handler)]
 
-use litchi_user::println;
+use litchi_user::{println, syscall::sys_get_task_id};
 
 #[no_mangle]
 extern "C" fn main() {
-    println!("welcome litchi user program");
+    let id = sys_get_task_id();
+    println!("Task {}: hello, litchi user program", id);
     for _ in 0..10000000 {}
-    println!("goodbye litchi user program");
+    println!("Task {}: goodbye, litchi user program", id);
 }

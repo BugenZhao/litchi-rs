@@ -1,4 +1,4 @@
-use litchi_user_common::syscall::{get_syscall, Syscall};
+use litchi_user_common::syscall::{self, Syscall, SyscallResponse};
 use log::info;
 
 use crate::{
@@ -13,12 +13,28 @@ fn syscall_inner() {
     let id = with_task_manager(|tm| tm.current_info().unwrap().id);
     info!("serving system call from {}", id);
 
-    match unsafe { get_syscall() } {
-        Syscall::Print { args } => print!("{}", args),
+    let response = match unsafe { syscall::get_syscall() } {
+        Syscall::Print { args } => {
+            print!("{}", args);
+            SyscallResponse::Ok
+        }
 
-        Syscall::ExtendHeap { top } => with_task_manager(|tm| tm.extend_heap(top)),
+        Syscall::ExtendHeap { top } => {
+            with_task_manager(|tm| tm.extend_heap(top));
+            SyscallResponse::Ok
+        }
 
-        Syscall::Exit => with_task_manager(TaskManager::drop_current),
+        Syscall::GetTaskId => SyscallResponse::GetTaskId { task_id: id },
+
+        Syscall::Exit => {
+            with_task_manager(TaskManager::drop_current);
+            SyscallResponse::Ok
+        }
+    };
+
+    // Maybe we've killed current task.
+    if with_task_manager(|tm| tm.has_running()) {
+        unsafe { syscall::response(response) };
     }
 }
 
