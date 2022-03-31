@@ -6,6 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+acpi = "4.1"
 align-data = "0.1"
 itertools = { version = "0.10", default-features = false }
 lazy_static = { version = "1.4", features = ["spin_no_std"] }

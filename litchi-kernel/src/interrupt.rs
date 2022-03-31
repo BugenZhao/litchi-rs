@@ -17,7 +17,7 @@ use x86_64::{
     PhysAddr, PrivilegeLevel, VirtAddr,
 };
 
-use crate::{gdt::IstIndex, memory::KERNEL_PAGE_TABLE};
+use crate::{acpi::ACPI, gdt::IstIndex, memory::KERNEL_PAGE_TABLE};
 
 mod macros;
 mod trap_handlers;
@@ -102,16 +102,14 @@ lazy_static! {
 }
 
 fn new_local_apic() -> LocalApic {
-    unsafe {
-        lapic::LocalApicBuilder::new()
-            .error_vector(UserInterrupt::ApicError.as_index())
-            .spurious_vector(UserInterrupt::ApicSpurious.as_index())
-            .timer_vector(UserInterrupt::ApicTimer.as_index())
-            .timer_initial(10_000_000 * 100)
-            .set_xapic_base(lapic::xapic_base())
-            .build()
-            .expect("failed to build lapic")
-    }
+    lapic::LocalApicBuilder::new()
+        .error_vector(UserInterrupt::ApicError.as_index())
+        .spurious_vector(UserInterrupt::ApicSpurious.as_index())
+        .timer_vector(UserInterrupt::ApicTimer.as_index())
+        .timer_initial(10_000_000 * 100)
+        .set_xapic_base(ACPI.apic_info.local_apic_address) // or lapic::xapic_base()
+        .build()
+        .expect("failed to build lapic")
 }
 
 pub fn init() {

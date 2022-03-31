@@ -27,6 +27,7 @@ efi/litchi-kernel: build-users build-kernel
 qemu: efi/QEMU_EFI.fd efi/litchi-kernel efi/EFI/BOOT/BOOTX64.efi
 	rm -f efi/NvVars
 	qemu-system-x86_64 \
+		-smp 4 \
 		-m 256M \
 		-gdb tcp::1234 \
 		-nographic \

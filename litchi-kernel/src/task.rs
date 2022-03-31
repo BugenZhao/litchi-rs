@@ -27,7 +27,7 @@ include_binary!(evil_memory_access_4);
 include_binary!(evil_heap);
 include_binary!(loop);
 
-pub fn run() -> ! {
+pub fn load() {
     with_task_manager(|task_manager| {
         task_manager.load_user("evil_heap", EVIL_HEAP_BIN);
         task_manager.load_user("evil_memory_access_1", EVIL_MEMORY_ACCESS_1_BIN);
@@ -38,6 +38,8 @@ pub fn run() -> ! {
         task_manager.load_user("loop2", LOOP_BIN);
         task_manager.load_user("loop3", LOOP_BIN);
     });
+}
 
+pub fn run() -> ! {
     schedule_and_run();
 }

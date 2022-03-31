@@ -11,7 +11,7 @@ use crate::BOOT_INFO;
 pub use raii::RaiiFrameAllocator;
 
 pub fn init() {
-    let boot_info = BOOT_INFO.get().expect("boot info not set");
+    let boot_info = BOOT_INFO.get().unwrap();
     FRAME_ALLOCATOR.call_once(|| Mutex::new(GlobalFrameAllocator::new(boot_info)));
 
     {

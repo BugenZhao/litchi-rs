@@ -36,7 +36,7 @@ impl core::fmt::Debug for PageTableWrapper {
 
 impl PageTableWrapper {
     fn new(frame: PhysFrame, allocator: RaiiFrameAllocator) -> Self {
-        let boot_info = BOOT_INFO.get().expect("boot info not set");
+        let boot_info = BOOT_INFO.get().unwrap();
 
         let l4_table = frame.start_address().as_u64() as *mut PageTable;
         let inner = unsafe {

@@ -2,8 +2,8 @@ use core::fmt::Debug;
 
 use alloc::vec::Vec;
 use size_format::SizeFormatterBinary;
-use uefi::table::{boot::MemoryDescriptor, Runtime, SystemTable};
-use x86_64::VirtAddr;
+use uefi::table::{boot::MemoryDescriptor, cfg::ACPI2_GUID, Runtime, SystemTable};
+use x86_64::{PhysAddr, VirtAddr};
 
 pub struct BootInfo {
     pub name: &'static str,
@@ -46,6 +46,14 @@ impl BootInfo {
             .sum::<u64>();
 
         (pages * 4096) as usize
+    }
+
+    pub fn acpi_rsdp_addr(&self) -> Option<PhysAddr> {
+        self.system_table
+            .config_table()
+            .iter()
+            .find(|table| table.guid == ACPI2_GUID)
+            .map(|table| PhysAddr::new(table.address as u64))
     }
 }
 

@@ -9,6 +9,7 @@
 
 extern crate alloc;
 
+mod acpi;
 mod frame_allocator;
 mod gdt;
 mod heap;
@@ -29,7 +30,6 @@ use crate::qemu::{exit, ExitCode};
 
 static BOOT_INFO: Once<&'static BootInfo> = Once::new();
 
-#[allow(unreachable_code)]
 #[no_mangle]
 pub extern "C" fn _kernel_main(boot_info: *const BootInfo) -> ! {
     // Initialize serial logger
@@ -43,18 +43,22 @@ pub extern "C" fn _kernel_main(boot_info: *const BootInfo) -> ! {
     // Check BSS
     memory_check();
 
-    // Initialize functionalities
+    // Initialize memories
     gdt::init();
-    interrupt::init();
     frame_allocator::init();
     memory::init();
-    // interrupts::init_io_apic(); // TODO: need ACPI info
     heap::init();
+
+    // Initialize interrupts
+    acpi::init();
+    interrupt::init();
+    // interrupts::init_io_apic(); // TODO: need ACPI info
 
     // Test interrupts
     instructions::interrupts::int3();
 
     // interrupt::enable(); // Enable it on first task.
+    task::load();
     task::run();
 }
 
@@ -73,10 +77,4 @@ fn memory_check() {
 fn panic(info: &PanicInfo) -> ! {
     error!("{}", info);
     exit(ExitCode::Failed);
-}
-
-#[allow(unconditional_recursion)]
-#[allow(dead_code)]
-fn stack_overflow() {
-    stack_overflow();
 }
