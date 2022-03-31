@@ -61,6 +61,12 @@ pub extern "C" fn _kernel_main(boot_info: *const BootInfo) -> ! {
     task::run();
 }
 
+fn idle() -> ! {
+    loop {
+        instructions::hlt();
+    }
+}
+
 fn memory_check() {
     static mut TEST_BSS: &mut [u8] = &mut [0; 10000];
 

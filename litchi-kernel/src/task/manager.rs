@@ -20,8 +20,8 @@ use x86_64::{
 
 use crate::{
     gdt::GDT,
+    idle,
     memory::{PageTableWrapper, KERNEL_PAGE_TABLE},
-    qemu::{exit, ExitCode},
     task::frame::Registers,
 };
 
@@ -150,11 +150,9 @@ impl TaskManager {
 
                 self.running = Some(task);
             } else {
-                info!("no task to schedule");
+                info!("no task to schedule, idle");
 
-                loop {}
-
-                exit(ExitCode::Success);
+                idle();
             }
         }
 
