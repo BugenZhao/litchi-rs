@@ -11,12 +11,12 @@ use x86_64::{
 
 pub fn create_kernel_page_table(
     allocator: &mut impl FrameAllocator<Size4KiB>,
-) -> OffsetPageTable<'static> {
+) -> (PhysFrame, OffsetPageTable<'static>) {
+    let frame = allocate_zeroed_frame(allocator);
+
     // UEFI maps vmem with a zero offset.
     let mut page_table = unsafe {
-        let frame = allocate_zeroed_frame(allocator);
         let p4_table = &mut *(frame.start_address().as_u64() as *mut _);
-
         OffsetPageTable::new(p4_table, VirtAddr::zero())
     };
 
@@ -40,5 +40,5 @@ pub fn create_kernel_page_table(
         }
     }
 
-    page_table
+    (frame, page_table)
 }

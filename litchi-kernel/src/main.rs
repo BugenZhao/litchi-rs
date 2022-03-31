@@ -51,20 +51,14 @@ pub extern "C" fn _kernel_main(boot_info: *const BootInfo) -> ! {
 
     // Initialize interrupts
     acpi::init();
+    interrupt::disable();
     interrupt::init();
-    interrupt::enable();
 
     // Test interrupts
     instructions::interrupts::int3();
 
     task::load();
     task::run();
-}
-
-fn idle() -> ! {
-    loop {
-        instructions::hlt();
-    }
 }
 
 fn memory_check() {

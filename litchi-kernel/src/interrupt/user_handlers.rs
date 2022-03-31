@@ -14,6 +14,7 @@ use crate::{
 
 define_frame_saving_handler! { syscall, syscall_inner }
 define_frame_saving_handler! { yield; apic_timer, apic_timer_inner }
+define_frame_saving_handler! { serial_in, serial_in_inner }
 
 fn syscall_inner() {
     let id = with_task_manager(|tm| tm.current_info().unwrap().id);
@@ -75,11 +76,19 @@ fn apic_timer_inner() {
     }
 }
 
+fn serial_in_inner() {
+    print!("?");
+
+    // unsafe {
+    //     super::LOCAL_APIC.lock().end_of_interrupt();
+    // }
+}
+
 pub extern "x86-interrupt" fn page_fault(
     stack_frame: InterruptStackFrame,
     error_code: PageFaultErrorCode,
 ) {
-    // We're not saving the task frame for this, since we're gonna kill it.
+    // It's okay that we're not saving the task frame, since we gonna kill it.
 
     let pl = SegmentSelector(stack_frame.code_segment as u16).rpl();
     if pl == PrivilegeLevel::Ring0 {

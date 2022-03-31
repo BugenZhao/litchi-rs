@@ -3,7 +3,7 @@ use core::fmt::Debug;
 use alloc::vec::Vec;
 use size_format::SizeFormatterBinary;
 use uefi::table::{boot::MemoryDescriptor, cfg::ACPI2_GUID, Runtime, SystemTable};
-use x86_64::{PhysAddr, VirtAddr};
+use x86_64::{structures::paging::PhysFrame, PhysAddr, VirtAddr};
 
 pub struct BootInfo {
     pub name: &'static str,
@@ -11,6 +11,8 @@ pub struct BootInfo {
     pub kernel_entry: VirtAddr,
 
     pub kernel_stack_top: VirtAddr,
+
+    pub kernel_page_table: PhysFrame,
 
     pub system_table: SystemTable<Runtime>,
 

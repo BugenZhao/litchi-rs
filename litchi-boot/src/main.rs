@@ -16,8 +16,7 @@ use log::info;
 use uefi::{prelude::*, proto::console::text::Color};
 use x86_64::{
     registers::control::{Cr3, Cr3Flags},
-    structures::paging::PhysFrame,
-    PhysAddr, VirtAddr,
+    VirtAddr,
 };
 
 use crate::{frame_allocator::BootFrameAllocator, page_table::create_kernel_page_table};
@@ -53,7 +52,7 @@ fn efi_main(handle: Handle, mut system_table: SystemTable<Boot>) -> Status {
     );
 
     let mut allocator = BootFrameAllocator::new(system_table.boot_services());
-    let mut page_table = create_kernel_page_table(&mut allocator);
+    let (page_table_frame, mut page_table) = create_kernel_page_table(&mut allocator);
     info!("created kernel page table");
 
     let loader_config = LoaderConfig {
@@ -72,13 +71,7 @@ fn efi_main(handle: Handle, mut system_table: SystemTable<Boot>) -> Status {
     info!("loaded kernel elf, entry {:p}", kernel_entry);
 
     unsafe {
-        Cr3::write(
-            PhysFrame::from_start_address(PhysAddr::new(
-                page_table.level_4_table() as *const _ as u64
-            ))
-            .expect("page table is not aligned"),
-            Cr3Flags::empty(),
-        );
+        Cr3::write(page_table_frame, Cr3Flags::empty());
     }
     info!("loaded kernel page table");
 
@@ -107,6 +100,7 @@ fn efi_main(handle: Handle, mut system_table: SystemTable<Boot>) -> Status {
         name: "litchi",
         kernel_entry: VirtAddr::from_ptr(kernel_entry),
         kernel_stack_top: VirtAddr::new(KERNEL_STACK_TOP),
+        kernel_page_table: page_table_frame,
         system_table,
         phys_offset: VirtAddr::zero(),
         memory_descriptors,

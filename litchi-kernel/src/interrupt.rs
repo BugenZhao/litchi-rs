@@ -58,6 +58,13 @@ fn new_idt() -> InterruptDescriptorTable {
             .set_stack_index(IstIndex::UserInterrupt as u16);
     }
 
+    // Serial in
+    unsafe {
+        idt[UserInterrupt::SerialIn.as_index()]
+            .set_handler_fn(serial_in)
+            .set_stack_index(IstIndex::UserInterrupt as u16);
+    }
+
     // Syscall
     unsafe {
         idt[UserInterrupt::Syscall.as_index()]
@@ -84,7 +91,7 @@ pub enum UserInterrupt {
     Syscall = SYSCALL_INTERRUPT,
 
     #[allow(unused)]
-    Serial = IO_APIC_INTERRUPT_OFFSET + 4,
+    SerialIn = IO_APIC_INTERRUPT_OFFSET + 4,
 }
 
 impl From<RawUserInterrupt> for UserInterrupt {
@@ -228,4 +235,10 @@ pub fn init_io_apic() {
 pub fn enable() {
     instructions::interrupts::enable();
     info!("enabled interrupts");
+}
+
+#[allow(dead_code)]
+pub fn disable() {
+    instructions::interrupts::disable();
+    info!("disabled interrupts");
 }

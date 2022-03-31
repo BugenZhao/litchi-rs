@@ -4,10 +4,7 @@ use log::info;
 use spin::Mutex;
 use x86_64::{
     instructions,
-    registers::{
-        self,
-        control::{Cr3, Cr3Flags},
-    },
+    registers::control::{Cr3, Cr3Flags},
     structures::paging::{
         mapper::TranslateResult, FrameAllocator, Mapper, OffsetPageTable, Page, PageSize,
         PageTable, PageTableFlags, PhysFrame, Size4KiB, Translate,
@@ -52,9 +49,9 @@ impl PageTableWrapper {
     }
 
     fn kernel() -> Self {
-        let current_frame = registers::control::Cr3::read().0;
+        let frame = BOOT_INFO.get().unwrap().kernel_page_table;
 
-        Self::new(current_frame, RaiiFrameAllocator::new_untraced())
+        Self::new(frame, RaiiFrameAllocator::new_untraced())
     }
 
     pub fn new_user() -> Self {

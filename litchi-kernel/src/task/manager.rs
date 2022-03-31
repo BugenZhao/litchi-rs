@@ -1,6 +1,10 @@
-use core::sync::atomic::{AtomicU64, Ordering};
+use core::{
+    iter::once,
+    ops::Deref,
+    sync::atomic::{AtomicU64, Ordering},
+};
 
-use alloc::{collections::VecDeque, string::String};
+use alloc::{borrow::ToOwned, collections::VecDeque, string::String};
 use lazy_static::lazy_static;
 use litchi_common::elf_loader::{ElfLoader, LoaderConfig};
 use litchi_user_common::{
@@ -20,12 +24,29 @@ use x86_64::{
 
 use crate::{
     gdt::GDT,
-    idle,
     memory::{PageTableWrapper, KERNEL_PAGE_TABLE},
     task::frame::Registers,
+    BOOT_INFO,
 };
 
 use super::TaskFrame;
+
+#[derive(Debug)]
+enum CowPageTableWrapper {
+    User(PageTableWrapper),
+    Kernel(&'static PageTableWrapper),
+}
+
+impl Deref for CowPageTableWrapper {
+    type Target = PageTableWrapper;
+
+    fn deref(&self) -> &Self::Target {
+        match self {
+            CowPageTableWrapper::User(p) => p,
+            CowPageTableWrapper::Kernel(p) => p,
+        }
+    }
+}
 
 #[derive(Debug, Clone)]
 pub struct TaskInfo {
@@ -40,9 +61,46 @@ struct Task {
 
     heap_top: VirtAddr,
 
-    page_table: PageTableWrapper,
+    page_table: CowPageTableWrapper,
 
     frame: Option<TaskFrame>,
+}
+
+const IDLE_TASK_ID: u64 = 0;
+
+impl Task {
+    fn idle() -> Self {
+        fn idle() -> ! {
+            loop {
+                instructions::hlt();
+            }
+        }
+
+        let segment = GDT.kernel_code_selector.0 as u64;
+
+        let frame = TaskFrame {
+            es: segment,
+            ds: segment,
+            regs: Registers::default(),
+            frame: InterruptStackFrameValue {
+                instruction_pointer: VirtAddr::from_ptr(idle as *const fn() -> !),
+                code_segment: segment,
+                cpu_flags: 0x0000_0200, // enable interrupts
+                stack_pointer: BOOT_INFO.get().unwrap().kernel_stack_top,
+                stack_segment: 0,
+            },
+        };
+
+        Self {
+            info: TaskInfo {
+                id: IDLE_TASK_ID,
+                name: "idle".to_owned(),
+            },
+            heap_top: USER_HEAP_BASE_ADDR,
+            page_table: CowPageTableWrapper::Kernel(&KERNEL_PAGE_TABLE),
+            frame: Some(frame),
+        }
+    }
 }
 
 lazy_static! {
@@ -62,7 +120,7 @@ impl TaskManager {
         Self {
             next_task_id: 1024.into(),
             running: None,
-            ready: Default::default(),
+            ready: once(Task::idle()).collect(), // TODO: do not schedule idle when there's other tasks
         }
     }
 
@@ -121,7 +179,6 @@ impl TaskManager {
                 instruction_pointer: VirtAddr::from_ptr(entry_point),
                 code_segment,
                 cpu_flags: 0x0000_0200, // enable interrupts
-                // cpu_flags: 0,
                 stack_pointer: USER_STACK_TOP,
                 stack_segment: data_segment,
             },
@@ -133,7 +190,7 @@ impl TaskManager {
                 name,
             },
             heap_top: USER_HEAP_BASE_ADDR,
-            page_table,
+            page_table: CowPageTableWrapper::User(page_table),
             frame: Some(frame),
         };
 
@@ -152,7 +209,7 @@ impl TaskManager {
             } else {
                 info!("no task to schedule, idle");
 
-                idle();
+                loop {}
             }
         }
 
@@ -166,20 +223,20 @@ impl TaskManager {
     }
 
     pub fn put_back(&mut self, frame: TaskFrame, yield_task: bool) {
+        let task = self.running.as_mut().expect("no task running");
+
         if !frame.is_user() {
-            info!("frame not from user, ignored");
-            return;
+            assert_eq!(task.info.id, IDLE_TASK_ID);
         }
 
-        let task = self.running.as_mut().expect("no task running");
         let old_frame = task.frame.replace(frame);
         assert!(old_frame.is_none(), "task frame exists");
 
         info!(
-            "returned from user: {:?}, yield = {}",
+            "returned from task: {:?}, yield = {}",
             task.info, yield_task
         );
-        debug!("returned from user: {:?}, yield = {}", task, yield_task);
+        debug!("returned from task: {:?}, yield = {}", task, yield_task);
 
         if yield_task {
             self.yield_current();
@@ -251,7 +308,7 @@ impl TaskManager {
     }
 
     pub fn current_page_table(&self) -> Option<&PageTableWrapper> {
-        self.running.as_ref().map(|task| &task.page_table)
+        self.running.as_ref().map(|task| task.page_table.deref())
     }
 }
 
