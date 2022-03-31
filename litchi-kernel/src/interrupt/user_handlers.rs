@@ -1,5 +1,5 @@
 use litchi_user_common::syscall::{self, Syscall, SyscallResponse};
-use log::{error, info, warn};
+use log::{debug, error, warn};
 use x86_64::{
     registers::segmentation::SegmentSelector,
     structures::idt::{InterruptStackFrame, PageFaultErrorCode},
@@ -19,7 +19,7 @@ define_frame_saving_handler! { serial_in, serial_in_inner }
 
 fn syscall_inner() {
     let id = with_task_manager(|tm| tm.current_info().unwrap().id);
-    info!("serving system call from {}", id);
+    debug!("serving system call from {}", id);
 
     let response = match unsafe { syscall::get_syscall() } {
         Syscall::Print { str } => {

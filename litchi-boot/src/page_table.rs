@@ -1,5 +1,5 @@
 use litchi_common::elf_loader::allocate_zeroed_frame;
-use log::info;
+use log::debug;
 
 use x86_64::{
     structures::paging::{
@@ -36,7 +36,7 @@ pub fn create_kernel_page_table(
                 .expect("failed to map page")
                 .flush();
 
-            info!("mapped {:?} to {:?}", page, frame);
+            debug!("mapped {:?} to {:?}", page, frame);
         }
     }
 

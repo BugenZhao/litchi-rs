@@ -75,16 +75,17 @@ fn efi_main(handle: Handle, mut system_table: SystemTable<Boot>) -> Status {
     }
     info!("loaded kernel page table");
 
-    system_table
-        .stdout()
-        .set_color(Color::Yellow, Color::Black)
-        .expect("failed to set color");
-
     let mmap_size = system_table.boot_services().memory_map_size().map_size;
     let mmap_buf = alloc::vec![0u8; mmap_size * 2].leak();
     let mut memory_descriptors = Vec::with_capacity(128);
 
     info!("exit boot services & call the kernel entry");
+
+    system_table
+        .stdout()
+        .set_color(Color::Yellow, Color::Black)
+        .expect("failed to set color");
+
     uefi::alloc::exit_boot_services();
     let (system_table, iter) = system_table
         .exit_boot_services(handle, mmap_buf)

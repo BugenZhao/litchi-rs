@@ -73,8 +73,10 @@ impl Debug for BootInfo {
             .field("name", &self.name)
             .field("kernel_entry", &self.kernel_entry)
             .field("kernel_stack_top", &self.kernel_stack_top)
+            .field("kernel_page_table", &self.kernel_page_table)
             .field("phys_offset", &self.phys_offset)
             .field("usable_memory", &UsableMemory(self.usable_memory()))
+            .field("acpi_rsdp_addr", &self.acpi_rsdp_addr())
             .finish_non_exhaustive()
     }
 }

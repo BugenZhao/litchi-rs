@@ -94,5 +94,5 @@ lazy_static! {
 pub fn init() {
     lazy_static::initialize(&ACPI);
 
-    info!("initialized acpi info: {:#x?}", *ACPI);
+    info!("initialized acpi info: {:x?}", *ACPI);
 }

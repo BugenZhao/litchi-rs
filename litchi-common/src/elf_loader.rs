@@ -84,7 +84,7 @@ where
             .program_iter()
             .filter(|p| p.get_type().expect("bad type") == program::Type::Load && p.mem_size() > 0)
         {
-            info!("begin to map segment {:x?}", segment);
+            debug!("begin to map segment {:x?}", segment);
 
             let file_start = file_base + segment.offset();
             let file_end = file_start + segment.file_size();
@@ -152,7 +152,7 @@ where
                 }
             }
 
-            info!("mapped this segment")
+            debug!("mapped this segment")
         }
 
         let entry_point = self.elf.header.pt2.entry_point();
