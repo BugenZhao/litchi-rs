@@ -7,7 +7,9 @@ use x86_64::{
 };
 
 use crate::{
-    define_frame_saving_handler, print,
+    define_frame_saving_handler,
+    interrupt::local_apic::end_of_interrupt,
+    print,
     qemu::{exit, ExitCode},
     serial_log::DEBUG_SERIAL,
     task::{schedule_and_run, with_task_manager, TaskManager},
@@ -72,9 +74,7 @@ fn syscall_inner() {
 fn apic_timer_inner() {
     print!(".");
 
-    unsafe {
-        super::LOCAL_APIC.lock().end_of_interrupt();
-    }
+    end_of_interrupt();
 }
 
 fn serial_in_inner() {
@@ -82,9 +82,7 @@ fn serial_in_inner() {
     let ch = char::from_u32(byte as u32).unwrap_or('?');
     print!("{}", ch);
 
-    unsafe {
-        super::LOCAL_APIC.lock().end_of_interrupt();
-    }
+    end_of_interrupt();
 }
 
 pub extern "x86-interrupt" fn page_fault(
