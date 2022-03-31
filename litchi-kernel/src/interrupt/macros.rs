@@ -15,6 +15,8 @@ macro_rules! define_frame_saving_handler {
             use $crate::task::{schedule_and_run, with_task_manager, TaskFrame};
 
             extern "C" fn _frame_saving_inner(mut frame: TaskFrame) {
+                assert!(! x86_64::instructions::interrupts::are_enabled());
+
                 frame.ds = registers::segmentation::DS::get_reg().0 as u64;
                 frame.es = registers::segmentation::ES::get_reg().0 as u64;
 

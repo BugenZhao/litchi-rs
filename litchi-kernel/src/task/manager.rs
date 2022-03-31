@@ -11,7 +11,7 @@ use litchi_user_common::{
     heap::USER_HEAP_BASE_ADDR,
     syscall::buffer::{SYSCALL_BUFFER_PAGES, SYSCALL_IN_ADDR, SYSCALL_OUT_ADDR},
 };
-use log::{debug, info, warn};
+use log::{debug, info, trace, warn};
 use spin::Mutex;
 use x86_64::{
     instructions,
@@ -199,25 +199,23 @@ impl TaskManager {
     }
 
     pub fn schedule(&mut self) -> TaskFrame {
-        #[allow(unreachable_code)]
         if self.running.is_none() {
-            if let Some(task) = self.ready.pop_front() {
-                task.page_table.load();
-                debug!("loaded page table: {:?}", task.page_table);
+            let task = self
+                .ready
+                .pop_front()
+                .expect("there should be always an idle task");
 
-                self.running = Some(task);
-            } else {
-                info!("no task to schedule, idle");
+            task.page_table.load();
+            debug!("loaded page table: {:?}", task.page_table);
 
-                loop {}
-            }
+            self.running = Some(task);
         }
 
         let task = self.running.as_mut().unwrap();
         assert!(task.page_table.is_current());
 
-        info!("scheduled: {:?}", task.info);
-        debug!("scheduled: {:?}", task);
+        debug!("scheduled: {:?}", task.info);
+        trace!("scheduled: {:?}", task);
 
         task.frame.take().expect("no frame for task")
     }
@@ -232,11 +230,11 @@ impl TaskManager {
         let old_frame = task.frame.replace(frame);
         assert!(old_frame.is_none(), "task frame exists");
 
-        info!(
+        debug!(
             "returned from task: {:?}, yield = {}",
             task.info, yield_task
         );
-        debug!("returned from task: {:?}, yield = {}", task, yield_task);
+        trace!("returned from task: {:?}, yield = {}", task, yield_task);
 
         if yield_task {
             self.yield_current();

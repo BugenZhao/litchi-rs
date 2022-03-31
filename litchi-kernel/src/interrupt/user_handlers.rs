@@ -9,6 +9,7 @@ use x86_64::{
 use crate::{
     define_frame_saving_handler, print,
     qemu::{exit, ExitCode},
+    serial_log::DEBUG_SERIAL,
     task::{schedule_and_run, with_task_manager, TaskManager},
 };
 
@@ -77,11 +78,13 @@ fn apic_timer_inner() {
 }
 
 fn serial_in_inner() {
-    print!("?");
+    let byte = DEBUG_SERIAL.lock().receive();
+    let ch = char::from_u32(byte as u32).unwrap_or('?');
+    print!("{}", ch);
 
-    // unsafe {
-    //     super::LOCAL_APIC.lock().end_of_interrupt();
-    // }
+    unsafe {
+        super::LOCAL_APIC.lock().end_of_interrupt();
+    }
 }
 
 pub extern "x86-interrupt" fn page_fault(
