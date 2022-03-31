@@ -99,6 +99,7 @@ impl PageTableWrapper {
         })
     }
 
+    #[allow(dead_code)]
     pub unsafe fn map_to<S: PageSize + Debug>(
         &self,
         page: Page<S>,

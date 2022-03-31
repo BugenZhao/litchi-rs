@@ -52,12 +52,11 @@ pub extern "C" fn _kernel_main(boot_info: *const BootInfo) -> ! {
     // Initialize interrupts
     acpi::init();
     interrupt::init();
-    // interrupts::init_io_apic(); // TODO: need ACPI info
+    interrupt::enable();
 
     // Test interrupts
     instructions::interrupts::int3();
 
-    // interrupt::enable(); // Enable it on first task.
     task::load();
     task::run();
 }

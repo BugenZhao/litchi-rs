@@ -142,6 +142,7 @@ impl TaskManager {
     }
 
     pub fn schedule(&mut self) -> TaskFrame {
+        #[allow(unreachable_code)]
         if self.running.is_none() {
             if let Some(task) = self.ready.pop_front() {
                 task.page_table.load();
@@ -150,6 +151,9 @@ impl TaskManager {
                 self.running = Some(task);
             } else {
                 info!("no task to schedule");
+
+                loop {}
+
                 exit(ExitCode::Success);
             }
         }
@@ -165,7 +169,7 @@ impl TaskManager {
 
     pub fn put_back(&mut self, frame: TaskFrame, yield_task: bool) {
         if !frame.is_user() {
-            debug!("frame not from user, ignored");
+            info!("frame not from user, ignored");
             return;
         }
 
