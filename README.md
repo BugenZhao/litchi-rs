@@ -49,7 +49,7 @@ make qemu
 - [x] User heap allocator.
 - [x] Task recycling.
 - [x] Idle task with kernel privilege.
-- [ ] Priority-based scheduler.
+- [x] Basic priority-based scheduler.
 - [ ] Task spawning and forking.
 - [ ] File or device resource management.
 - [ ] Synchronization primitives.

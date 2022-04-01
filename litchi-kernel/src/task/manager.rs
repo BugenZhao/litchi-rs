@@ -1,10 +1,13 @@
 use core::{
-    iter::once,
     ops::Deref,
     sync::atomic::{AtomicU64, Ordering},
 };
 
-use alloc::{borrow::ToOwned, collections::VecDeque, string::String};
+use alloc::{
+    borrow::ToOwned,
+    collections::{BTreeMap, VecDeque},
+    string::String,
+};
 use lazy_static::lazy_static;
 use litchi_common::elf_loader::{ElfLoader, LoaderConfig};
 use litchi_user_common::{
@@ -32,18 +35,18 @@ use crate::{
 use super::TaskFrame;
 
 #[derive(Debug)]
-enum CowPageTableWrapper {
+enum TaskPageTable {
     User(PageTableWrapper),
     Kernel(&'static PageTableWrapper),
 }
 
-impl Deref for CowPageTableWrapper {
+impl Deref for TaskPageTable {
     type Target = PageTableWrapper;
 
     fn deref(&self) -> &Self::Target {
         match self {
-            CowPageTableWrapper::User(p) => p,
-            CowPageTableWrapper::Kernel(p) => p,
+            TaskPageTable::User(p) => p,
+            TaskPageTable::Kernel(p) => p,
         }
     }
 }
@@ -55,20 +58,36 @@ pub struct TaskInfo {
     pub name: String,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+struct Priority(u8);
+
+impl Priority {
+    const fn user() -> Self {
+        Self(128)
+    }
+
+    const fn idle() -> Self {
+        Self(255)
+    }
+}
+
 #[derive(Debug)]
 struct Task {
     info: TaskInfo,
 
+    priority: Priority,
+
     heap_top: VirtAddr,
 
-    page_table: CowPageTableWrapper,
+    page_table: TaskPageTable,
 
     frame: Option<TaskFrame>,
 }
 
-const IDLE_TASK_ID: u64 = 0;
-
 impl Task {
+    const IDLE_ID: u64 = 0;
+    const USER_START_ID: u64 = 1024;
+
     fn idle() -> Self {
         fn idle() -> ! {
             loop {
@@ -93,11 +112,12 @@ impl Task {
 
         Self {
             info: TaskInfo {
-                id: IDLE_TASK_ID,
+                id: Self::IDLE_ID,
                 name: "idle".to_owned(),
             },
-            heap_top: USER_HEAP_BASE_ADDR,
-            page_table: CowPageTableWrapper::Kernel(&KERNEL_PAGE_TABLE),
+            priority: Priority::idle(),
+            heap_top: VirtAddr::zero(), // unused
+            page_table: TaskPageTable::Kernel(&KERNEL_PAGE_TABLE),
             frame: Some(frame),
         }
     }
@@ -112,16 +132,18 @@ pub struct TaskManager {
 
     running: Option<Task>,
 
-    ready: VecDeque<Task>,
+    ready: BTreeMap<Priority, VecDeque<Task>>,
 }
 
 impl TaskManager {
     fn new() -> Self {
-        Self {
-            next_task_id: 1024.into(),
+        let mut tm = Self {
+            next_task_id: Task::USER_START_ID.into(),
             running: None,
-            ready: once(Task::idle()).collect(), // TODO: do not schedule idle when there's other tasks
-        }
+            ready: Default::default(),
+        };
+        tm.add_to_ready(Task::idle());
+        tm
     }
 
     fn allocate_id(&self) -> u64 {
@@ -130,6 +152,19 @@ impl TaskManager {
 }
 
 impl TaskManager {
+    fn add_to_ready(&mut self, task: Task) {
+        self.ready.entry(task.priority).or_default().push_back(task);
+    }
+
+    fn take_one_ready(&mut self) -> Task {
+        self.ready
+            .values_mut()
+            .find(|q| !q.is_empty())
+            .expect("there should be always an idle task")
+            .pop_back()
+            .unwrap()
+    }
+
     pub fn load_user(&mut self, name: impl Into<String>, elf_bytes: &'static [u8]) {
         const USER_STACK_TOP: VirtAddr = VirtAddr::new_truncate(0x1889_0000_0000);
         const USER_STACK_PAGES: u64 = 10;
@@ -189,21 +224,19 @@ impl TaskManager {
                 id: self.allocate_id(),
                 name,
             },
+            priority: Priority::user(),
             heap_top: USER_HEAP_BASE_ADDR,
-            page_table: CowPageTableWrapper::User(page_table),
+            page_table: TaskPageTable::User(page_table),
             frame: Some(frame),
         };
 
         info!("new task: {:?}", task);
-        self.ready.push_back(task);
+        self.add_to_ready(task);
     }
 
     pub fn schedule(&mut self) -> TaskFrame {
         if self.running.is_none() {
-            let task = self
-                .ready
-                .pop_front()
-                .expect("there should be always an idle task");
+            let task = self.take_one_ready();
 
             task.page_table.load();
             debug!("loaded page table: {:?}", task.page_table);
@@ -224,7 +257,7 @@ impl TaskManager {
         let task = self.running.as_mut().expect("no task running");
 
         if !frame.is_user() {
-            assert_eq!(task.info.id, IDLE_TASK_ID);
+            assert_eq!(task.info.id, Task::IDLE_ID);
         }
 
         let old_frame = task.frame.replace(frame);
@@ -246,7 +279,7 @@ impl TaskManager {
             debug!("empty ready queue, no need to yield");
         } else {
             let task = self.running.take().unwrap();
-            self.ready.push_back(task);
+            self.add_to_ready(task);
         }
     }
 
