@@ -1,4 +1,7 @@
-use litchi_user_common::syscall::{syscall, Syscall};
+use litchi_user_common::{
+    resource::{ResourceHandle, ResourceResult},
+    syscall::{syscall, Syscall},
+};
 use x86_64::VirtAddr;
 
 pub fn sys_print(str: &str) {
@@ -21,6 +24,18 @@ pub fn sys_yield() {
 
 pub fn sys_sleep(slice: usize) {
     unsafe { syscall(Syscall::Sleep { slice }) };
+}
+
+pub fn sys_open(path: &str) -> ResourceResult<ResourceHandle> {
+    unsafe { syscall(Syscall::Open { path }) }
+        .into_open()
+        .unwrap()
+}
+
+pub fn sys_read(handle: ResourceHandle, buf: &mut [u8]) -> ResourceResult<usize> {
+    unsafe { syscall(Syscall::Read { handle, buf }) }
+        .into_read()
+        .unwrap()
 }
 
 pub fn sys_exit() -> ! {

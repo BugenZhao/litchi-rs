@@ -27,6 +27,7 @@ macro_rules! include_binary {
 // include_binary!(evil_heap);
 // include_binary!(loop);
 include_binary!(sleep);
+include_binary!(term);
 
 pub fn load() {
     with_task_manager(|task_manager| {
@@ -40,6 +41,7 @@ pub fn load() {
         // task_manager.load_user("loop3", LOOP_BIN);
         task_manager.load_user("sleep1", SLEEP_BIN);
         task_manager.load_user("sleep2", SLEEP_BIN);
+        task_manager.load_user("term", TERM_BIN);
     });
 }
 

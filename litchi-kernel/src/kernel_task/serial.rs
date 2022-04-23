@@ -11,7 +11,7 @@ lazy_static::lazy_static! {
 }
 
 pub fn push(byte: u8) {
-    CHANNEL.0.send_one(byte);
+    CHANNEL.0.send_all(byte);
 }
 
 pub fn subscribe() -> broadcast::Receiver<u8> {
