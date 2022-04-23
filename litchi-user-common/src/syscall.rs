@@ -13,6 +13,7 @@ pub enum Syscall<'a> {
     ExtendHeap { top: VirtAddr },
     GetTaskId,
     Yield,
+    Sleep { slice: usize },
     Exit,
 }
 

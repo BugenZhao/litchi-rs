@@ -37,7 +37,7 @@ pub async fn sleep(slice: usize) {
     rx.next().await.unwrap();
 }
 
-pub(super) async fn sleep_5_example() {
-    sleep(5).await;
-    log::info!("slept 5 slices");
+pub(super) async fn sleep_2_example() {
+    sleep(2).await;
+    log::info!("slept 2 slices");
 }

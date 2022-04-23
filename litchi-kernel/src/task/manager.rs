@@ -5,14 +5,19 @@ use core::{
 
 use alloc::{
     borrow::ToOwned,
+    boxed::Box,
     collections::{BTreeMap, VecDeque},
     string::String,
+    sync::{Arc, Weak},
 };
 use lazy_static::lazy_static;
 use litchi_common::elf_loader::{ElfLoader, LoaderConfig};
 use litchi_user_common::{
     heap::USER_HEAP_BASE_ADDR,
-    syscall::buffer::{SYSCALL_BUFFER_PAGES, SYSCALL_IN_ADDR, SYSCALL_OUT_ADDR},
+    syscall::{
+        buffer::{SYSCALL_BUFFER_PAGES, SYSCALL_IN_ADDR, SYSCALL_OUT_ADDR},
+        SyscallResponse,
+    },
 };
 use log::{debug, info, trace, warn};
 use spin::Mutex;
@@ -72,6 +77,14 @@ impl Priority {
     }
 }
 
+struct PreScheduling(Box<dyn FnOnce() + Send>);
+
+impl core::fmt::Debug for PreScheduling {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.debug_tuple("PreScheduling").finish()
+    }
+}
+
 #[derive(Debug)]
 struct Task {
     info: TaskInfo,
@@ -83,6 +96,8 @@ struct Task {
     page_table: TaskPageTable,
 
     frame: Option<TaskFrame>,
+
+    pre_schduling: Option<PreScheduling>,
 }
 
 impl Task {
@@ -120,7 +135,26 @@ impl Task {
             heap_top: VirtAddr::zero(), // unused
             page_table: TaskPageTable::Kernel(&KERNEL_PAGE_TABLE),
             frame: Some(frame),
+            pre_schduling: None,
         }
+    }
+}
+
+struct PendingTaskToken;
+
+pub struct PendingTaskHandle {
+    id: u64,
+
+    _token: Arc<PendingTaskToken>,
+}
+
+impl PendingTaskHandle {
+    pub fn resume_syscall_response(self, response: SyscallResponse) {
+        with_task_manager(|tm| {
+            tm.resume_task(self, move || unsafe {
+                litchi_user_common::syscall::response(response);
+            })
+        })
     }
 }
 
@@ -134,6 +168,8 @@ pub struct TaskManager {
     running: Option<Task>,
 
     ready: BTreeMap<Priority, VecDeque<Task>>,
+
+    pending: BTreeMap<u64, (Task, Weak<PendingTaskToken>)>,
 }
 
 impl TaskManager {
@@ -142,6 +178,7 @@ impl TaskManager {
             next_task_id: Task::USER_START_ID.into(),
             running: None,
             ready: Default::default(),
+            pending: Default::default(),
         };
         tm.add_to_ready(Task::idle());
         tm
@@ -229,13 +266,26 @@ impl TaskManager {
             heap_top: USER_HEAP_BASE_ADDR,
             page_table: TaskPageTable::User(page_table),
             frame: Some(frame),
+            pre_schduling: None,
         };
 
         info!("new task: {:?}", task);
         self.add_to_ready(task);
     }
 
+    fn cleanup_zombies(&mut self) {
+        self.pending.retain(|_, (task, token)| {
+            let zombie = token.strong_count() == 0;
+            if zombie {
+                warn!("zombie task: {:?}", task.info);
+            }
+            !zombie
+        });
+    }
+
     fn schedule(&mut self) -> TaskFrame {
+        self.cleanup_zombies();
+
         if self.running.is_none() {
             let task = self.take_one_ready();
 
@@ -250,6 +300,11 @@ impl TaskManager {
 
         debug!("scheduled: {:?}", task.info);
         trace!("scheduled: {:?}", task);
+
+        // Run pre scheduling callback. For example, syscall response after pending.
+        if let Some(f) = task.pre_schduling.take() {
+            (f.0)();
+        }
 
         task.frame.take().expect("no frame for task")
     }
@@ -289,6 +344,36 @@ impl TaskManager {
 
         let task = self.running.take().expect("no task running");
         info!("dropped current task: {:?}", task.info);
+    }
+
+    pub fn pend_current(&mut self) -> PendingTaskHandle {
+        KERNEL_PAGE_TABLE.load();
+
+        let task = self.running.take().expect("no task running");
+        let id = task.info.id;
+        assert!(task.frame.is_some(), "empty frame while pending task");
+
+        let token = Arc::new(PendingTaskToken);
+        let weak_token = Arc::downgrade(&token);
+
+        self.pending.insert(id, (task, weak_token));
+        PendingTaskHandle { id, _token: token }
+    }
+
+    pub fn resume_task(
+        &mut self,
+        task_handle: PendingTaskHandle,
+        pre_scheduling: impl FnOnce() + Send + 'static,
+    ) {
+        let id = task_handle.id;
+        let mut task = self
+            .pending
+            .remove(&id)
+            .unwrap_or_else(|| panic!("no pending task {id}"))
+            .0;
+        task.pre_schduling = Some(PreScheduling(Box::new(pre_scheduling)));
+
+        self.add_to_ready(task);
     }
 
     pub fn extend_heap(&mut self, top: VirtAddr) {

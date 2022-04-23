@@ -19,6 +19,10 @@ pub fn sys_yield() {
     unsafe { syscall(Syscall::Yield) };
 }
 
+pub fn sys_sleep(slice: usize) {
+    unsafe { syscall(Syscall::Sleep { slice }) };
+}
+
 pub fn sys_exit() -> ! {
     unsafe {
         syscall(Syscall::Exit);

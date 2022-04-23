@@ -2,7 +2,7 @@ use litchi_user_common::syscall::{Syscall, SyscallResponse};
 use log::warn;
 
 use crate::{
-    print,
+    kernel_task, print,
     task::{with_task_manager, TaskInfo, TaskManager},
 };
 
@@ -42,6 +42,17 @@ pub fn handle_syscall(syscall: Syscall, task_info: TaskInfo) -> SyscallResponse 
 
         Syscall::Yield => {
             with_task_manager(TaskManager::yield_current);
+            SyscallResponse::Ok
+        }
+
+        Syscall::Sleep { slice } => {
+            if slice != 0 {
+                let task = with_task_manager(TaskManager::pend_current);
+                kernel_task::spawn(async move {
+                    kernel_task::time::sleep(slice).await;
+                    task.resume_syscall_response(SyscallResponse::Ok)
+                });
+            }
             SyscallResponse::Ok
         }
 
