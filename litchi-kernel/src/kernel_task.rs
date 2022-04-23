@@ -1,3 +1,6 @@
+mod serial;
+pub use serial::SERIAL_STREAM;
+
 use core::{
     pin::Pin,
     sync::atomic::{AtomicU64, Ordering},
@@ -8,14 +11,13 @@ use alloc::{boxed::Box, collections::BTreeMap, sync::Arc, task::Wake};
 use crossbeam_queue::ArrayQueue;
 use futures::Future;
 use lazy_static::lazy_static;
-use log::info;
 use spin::Mutex;
-use x86_64::instructions;
 
 pub trait TaskFuture = Future<Output = ()> + 'static;
 pub type BoxedTaskFuture = Pin<Box<dyn TaskFuture>>;
 
 pub struct KernelTask {
+    #[allow(unused)]
     id: u64,
 
     future: BoxedTaskFuture,
@@ -28,7 +30,7 @@ struct TaskWaker {
 }
 
 impl TaskWaker {
-    fn new(id: u64, all_ready: Arc<ArrayQueue<u64>>) -> Waker {
+    fn new_waker(id: u64, all_ready: Arc<ArrayQueue<u64>>) -> Waker {
         Arc::new(Self { id, all_ready }).into()
     }
 
@@ -83,16 +85,12 @@ impl KernelTaskExecutor {
             id,
             future: Box::pin(fut),
         };
-        let waker = TaskWaker::new(id, self.ready.clone());
+        let waker = TaskWaker::new_waker(id, self.ready.clone());
         self.tasks.lock().insert(id, Some((task, waker)));
         self.ready.push(id).expect("kernel task full");
     }
 
-    pub fn is_idle(&self) -> bool {
-        self.ready.is_empty()
-    }
-
-    fn run(&self) {
+    fn poll(&self) {
         while let Some(id) = self.ready.pop() {
             let (mut task, waker) = {
                 let Some(task_entry) = self.tasks.lock().get_mut(&id) else {
@@ -114,13 +112,11 @@ impl KernelTaskExecutor {
     }
 }
 
-pub fn run() -> ! {
-    KERNEL_TASK_EXECUTOR.spawn(async {
-        info!("example kernel task");
-    });
+pub fn init() {
+    lazy_static::initialize(&KERNEL_TASK_EXECUTOR);
+    KERNEL_TASK_EXECUTOR.spawn(serial::echo());
+}
 
-    loop {
-        KERNEL_TASK_EXECUTOR.run();
-        instructions::hlt();
-    }
+pub fn poll() {
+    KERNEL_TASK_EXECUTOR.poll();
 }

@@ -9,6 +9,7 @@ use x86_64::{
 use crate::{
     define_frame_saving_handler,
     interrupt::local_apic::end_of_interrupt,
+    kernel_task::SERIAL_STREAM,
     print,
     qemu::{exit, ExitCode},
     serial_log::DEBUG_SERIAL,
@@ -80,7 +81,7 @@ fn apic_timer_inner() {
 fn serial_in_inner() {
     let byte = DEBUG_SERIAL.lock().receive();
     let ch = char::from_u32(byte as u32).unwrap_or('?');
-    print!("{}", ch);
+    SERIAL_STREAM.push(ch);
 
     end_of_interrupt();
 }

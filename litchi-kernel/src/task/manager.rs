@@ -103,7 +103,7 @@ impl Task {
             ds: segment,
             regs: Registers::default(),
             frame: InterruptStackFrameValue {
-                instruction_pointer: VirtAddr::from_ptr(kernel_task::run as *const fn() -> !),
+                instruction_pointer: VirtAddr::from_ptr(idle as *const fn() -> !),
                 code_segment: segment,
                 cpu_flags: 0x0000_0200, // enable interrupts
                 stack_pointer: BOOT_INFO.get().unwrap().kernel_stack_top,
@@ -235,7 +235,7 @@ impl TaskManager {
         self.add_to_ready(task);
     }
 
-    pub fn schedule(&mut self) -> TaskFrame {
+    fn schedule(&mut self) -> TaskFrame {
         if self.running.is_none() {
             let task = self.take_one_ready();
 
@@ -355,6 +355,7 @@ where
 }
 
 pub fn schedule_and_run() -> ! {
+    kernel_task::poll(); // Poll the kernel task first
     let task_frame = with_task_manager(TaskManager::schedule);
     unsafe { task_frame.pop() }
 }

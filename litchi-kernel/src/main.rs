@@ -8,6 +8,8 @@
 #![feature(asm_sym)]
 #![feature(trait_alias)]
 #![feature(let_else)]
+#![feature(proc_macro_hygiene)]
+#![feature(stmt_expr_attributes)]
 
 extern crate alloc;
 
@@ -59,6 +61,8 @@ pub extern "C" fn _kernel_main(boot_info: *const BootInfo) -> ! {
 
     // Test interrupts
     instructions::interrupts::int3();
+
+    kernel_task::init();
 
     task::load();
     task::run();
