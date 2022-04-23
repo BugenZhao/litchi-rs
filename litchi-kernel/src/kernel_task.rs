@@ -1,6 +1,7 @@
 mod executor;
-mod serial;
-pub use serial::SERIAL_STREAM;
+pub mod mpsc;
+pub mod serial;
+mod sleep;
 
 use self::executor::KERNEL_TASK_EXECUTOR;
 
