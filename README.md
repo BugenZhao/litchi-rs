@@ -1,8 +1,8 @@
 # litchi-rs
 
-An x86-64 kernel with ~100% Rust in a week. The continuation of [Litchi](https://github.com/BugenZhao/Litchi).
+An x86-64 kernel with ~100% Rust (originally) in a week. The continuation of [Litchi](https://github.com/BugenZhao/Litchi).
 
-![Screenshot](https://user-images.githubusercontent.com/25862682/161102150-9dd3f27f-5cbd-4c06-9559-c3b127eeb78b.png)
+![Screenshot](https://user-images.githubusercontent.com/25862682/164913642-d955504b-7d66-4136-be95-12d52157580c.png)
 
 ## Try it
 
@@ -50,18 +50,19 @@ make qemu
 - [x] Task recycling.
 - [x] Idle task with kernel privilege.
 - [x] Basic priority-based scheduler.
+- [x] File or device resource management.
+- [x] Blocking system calls.
+- [x] A basic userspace shell.
 - [ ] Task spawning and forking.
-- [ ] File or device resource management.
 - [ ] Synchronization primitives.
-- [ ] (Asynchronous) IO.
-- [ ] A basic shell.
+- [ ] Asynchronous IO.
 - [ ] ...
 
 ### Other Kernel Functionalities
 
 - [x] Event-driven UART serial input handler.
+- [x] Kernel task with async Rust!
 - [ ] Multiprocessors.
-- [ ] Kernel thread with async Rust.
 - [ ] Simple file systems.
 - [ ] IPC mechanisms.
 - [ ] ...
