@@ -12,9 +12,15 @@ pub use self::manager::{with_task_manager, TaskInfo, TaskManager};
 macro_rules! include_binary {
     ($name: ident) => {
         paste! {
+            #[cfg(debug_assertions)]
             static [<$name:upper _BIN>]: &[u8] = include_aligned!(
                 Align4K,
                 concat!("../../target/x86_64-unknown-litchi-user/debug/", stringify!($name), ".lit")
+            );
+            #[cfg(not(debug_assertions))]
+            static [<$name:upper _BIN>]: &[u8] = include_aligned!(
+                Align4K,
+                concat!("../../target/x86_64-unknown-litchi-user/release/", stringify!($name), ".lit")
             );
         }
     };

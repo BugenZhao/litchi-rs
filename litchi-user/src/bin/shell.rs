@@ -77,7 +77,7 @@ fn handle<'a>(command: String, mut args: impl Iterator<Item = &'a str>) -> Resul
 #[no_mangle]
 extern "C" fn main() {
     let mut term = Term::open().unwrap();
-    println!("Welcome to the Litchi Shell.");
+    println!("\n\n\nWelcome to the Litchi Shell.");
 
     loop {
         print!("> ");

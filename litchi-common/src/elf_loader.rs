@@ -1,7 +1,7 @@
 use core::intrinsics::copy_nonoverlapping;
 
 use itertools::{EitherOrBoth, Itertools};
-use log::{debug, info};
+use log::debug;
 use x86_64::{
     structures::paging::{
         FrameAllocator, Mapper, OffsetPageTable, Page, PageSize, PageTableFlags, PhysFrame,
@@ -156,7 +156,7 @@ where
         }
 
         let entry_point = self.elf.header.pt2.entry_point();
-        info!("entry point at 0x{:x}", self.elf.header.pt2.entry_point());
+        debug!("entry point at 0x{:x}", self.elf.header.pt2.entry_point());
 
         let stack_page = Page::containing_address(self.config.stack_top);
         for i in 0..=self.config.stack_pages {

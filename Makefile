@@ -1,3 +1,10 @@
+PROFILE?=dev
+ifeq ($(PROFILE),dev)
+	TARGET=debug
+else
+	TARGET=$(PROFILE)
+endif
+
 .PHONY: default build build-users build-kernel build-boot qemu kill clean
 
 default: qemu
@@ -9,20 +16,20 @@ efi/QEMU_EFI.fd:
 build: build-users build-kernel build-boot
 
 build-users:
-	cd litchi-user && cargo build --bins
+	cd litchi-user && cargo build --bins --profile $(PROFILE)
 
 build-kernel:
-	cd litchi-kernel && cargo build
+	cd litchi-kernel && cargo build  --profile $(PROFILE)
 
 build-boot:
-	cd litchi-boot && cargo build
+	cd litchi-boot && cargo build  --profile $(PROFILE)
 
 efi/EFI/BOOT/BOOTX64.efi: build-boot
 	@mkdir -p efi/EFI/BOOT
-	cp target/x86_64-unknown-uefi/debug/litchi-boot.efi efi/EFI/BOOT/BOOTX64.efi
+	cp target/x86_64-unknown-uefi/$(TARGET)/litchi-boot.efi efi/EFI/BOOT/BOOTX64.efi
 
 efi/litchi-kernel: build-users build-kernel
-	cp target/x86_64-unknown-litchi/debug/litchi-kernel efi/litchi-kernel
+	cp target/x86_64-unknown-litchi/$(TARGET)/litchi-kernel efi/litchi-kernel
 
 qemu: efi/QEMU_EFI.fd efi/litchi-kernel efi/EFI/BOOT/BOOTX64.efi
 	rm -f efi/NvVars
