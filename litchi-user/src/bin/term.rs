@@ -3,21 +3,64 @@
 
 extern crate alloc;
 
-use alloc::string::String;
+use alloc::{string::String, vec, vec::Vec};
+use anyhow::{anyhow, Error, Result};
 use litchi_user::{
     println,
-    syscall::{sys_get_task_id, sys_open, sys_read},
+    syscall::{sys_open, sys_read},
 };
+use litchi_user_common::resource::ResourceHandle;
+
+struct Term {
+    handle: ResourceHandle,
+
+    buf: Vec<u8>,
+
+    cursor: usize,
+}
+
+impl Term {
+    fn open() -> Result<Self> {
+        Ok(Self {
+            handle: sys_open("/device/term").map_err(Error::msg)?,
+            buf: Vec::new(),
+            cursor: 0,
+        })
+    }
+
+    fn read_line(&mut self) -> Result<String> {
+        let mut read = Vec::new();
+
+        loop {
+            if self.cursor == self.buf.len() {
+                let mut buf = vec![0u8; 256];
+                let len = sys_read(self.handle, &mut buf).map_err(Error::msg)?;
+                if len == 0 {
+                    return Err(anyhow!("term eof"));
+                }
+                buf.resize(len, 0);
+                self.buf = buf;
+                self.cursor = 0;
+            }
+
+            let byte = self.buf[self.cursor];
+            read.push(byte);
+            self.cursor += 1;
+
+            if byte == b'\n' {
+                let s = String::from_utf8_lossy(&read).into_owned();
+                return Ok(s);
+            }
+        }
+    }
+}
 
 #[no_mangle]
 extern "C" fn main() {
-    let id = sys_get_task_id();
-    let term = sys_open("/device/term").unwrap();
+    let mut term = Term::open().unwrap();
 
-    let buf = &mut [0u8; 256];
-    while let Ok(len) = sys_read(term, buf) {
-        let read = &buf[..len];
-        let str = String::from_utf8_lossy(read);
-        println!("Task {}: from terminal: {}", id, str);
+    loop {
+        let line = term.read_line().unwrap();
+        println!("term received: \"{}\"", line);
     }
 }

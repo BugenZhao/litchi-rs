@@ -3,7 +3,7 @@ use crate::syscall::sys_print;
 #[macro_export]
 macro_rules! print {
     ($($arg:tt)*) => {
-        $crate::print::_print(format_args!($($arg)*))
+        $crate::term::_print(format_args!($($arg)*))
     };
 }
 

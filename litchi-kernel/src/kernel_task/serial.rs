@@ -12,6 +12,9 @@ lazy_static::lazy_static! {
 
 pub fn push(byte: u8) {
     CHANNEL.0.send_all(byte);
+    if byte == b'\r' {
+        CHANNEL.0.send_all(b'\n');
+    }
 }
 
 pub fn subscribe() -> broadcast::Receiver<u8> {

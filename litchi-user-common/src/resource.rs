@@ -8,4 +8,10 @@ pub enum ResourceError {
     Closed,
 }
 
+impl core::fmt::Display for ResourceError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        core::fmt::Debug::fmt(self, f)
+    }
+}
+
 pub type ResourceResult<T> = Result<T, ResourceError>;

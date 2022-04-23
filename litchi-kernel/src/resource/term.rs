@@ -35,7 +35,7 @@ impl Resource for Term {
         while buf.len() < max_len {
             let byte = stream.next().await.unwrap();
             buf.push(byte);
-            if byte == b'\r' || byte == b'\n' {
+            if byte == b'\n' {
                 break;
             }
         }
