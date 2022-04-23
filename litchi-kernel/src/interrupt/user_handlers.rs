@@ -41,8 +41,7 @@ fn apic_timer_inner() {
 
 fn serial_in_inner() {
     let byte = DEBUG_SERIAL.lock().receive();
-    let ch = char::from_u32(byte as u32).unwrap_or('?');
-    kernel_task::serial::push(ch);
+    kernel_task::serial::push(byte);
 
     end_of_interrupt();
 }

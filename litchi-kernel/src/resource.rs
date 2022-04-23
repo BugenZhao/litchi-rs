@@ -1,16 +1,31 @@
-use alloc::{boxed::Box, string::String};
+mod term;
+
+use alloc::{boxed::Box, string::String, vec::Vec};
+use async_trait::async_trait;
+
+use self::term::Term;
 
 pub type BoxedResource = Box<dyn Resource>;
 
+#[async_trait]
 pub trait Resource: Send + Sync + core::fmt::Debug {
-    fn read(&self, buf: &mut [u8]) -> Option<usize>;
+    async fn read(&self, max_len: usize) -> Option<Vec<u8>>;
 
-    fn write(&self, data: &[u8]) -> Option<usize>;
+    async fn write(&self, data: &[u8]) -> Option<usize>;
+
+    fn boxed(self) -> BoxedResource
+    where
+        Self: Sized + Send + 'static,
+    {
+        Box::new(self)
+    }
 }
 
 pub fn open(path: String) -> Option<BoxedResource> {
-    match path.as_str() {
-        "/device/term_input" => todo!(),
-        _ => None,
-    }
+    let res = match path.as_str() {
+        "/device/term" => Term::new().boxed(),
+        _ => return None,
+    };
+
+    Some(res)
 }
