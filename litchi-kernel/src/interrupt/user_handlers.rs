@@ -1,4 +1,4 @@
-use litchi_user_common::syscall::{self, Syscall, SyscallResponse};
+use litchi_user_common::syscall;
 use log::{debug, error, warn};
 use x86_64::{
     registers::segmentation::SegmentSelector,
@@ -12,7 +12,8 @@ use crate::{
     kernel_task, print,
     qemu::{exit, ExitCode},
     serial_log::DEBUG_SERIAL,
-    task::{schedule_and_run, with_task_manager, TaskManager},
+    syscall::handle_syscall,
+    task::{schedule_and_run, with_task_manager},
 };
 
 define_frame_saving_handler! { syscall, syscall_inner }
@@ -20,50 +21,10 @@ define_frame_saving_handler! { yield; apic_timer, apic_timer_inner }
 define_frame_saving_handler! { serial_in, serial_in_inner }
 
 fn syscall_inner() {
-    let id = with_task_manager(|tm| tm.current_info().unwrap().id);
-    debug!("serving system call from {}", id);
+    let info = with_task_manager(|tm| tm.current_info().cloned().unwrap());
+    debug!("serving system call from {}", info.id);
 
-    let response = match unsafe { syscall::get_syscall() } {
-        Syscall::Print { str } => {
-            let bytes = str.as_bytes();
-            let legal = with_task_manager(|tm| {
-                let page_table = tm.current_page_table().unwrap();
-                page_table.check_user_accessible(bytes.as_ptr() as *const (), bytes.len())
-            });
-
-            if legal {
-                print!("{}", str);
-            } else {
-                with_task_manager(|tm| {
-                    let current_task = tm.current_info().unwrap().clone();
-                    warn!(
-                        "illegal access for printing, killed it: {:?}, bytes {:?}",
-                        current_task,
-                        bytes.as_ptr_range()
-                    );
-                    tm.drop_current();
-                });
-            }
-            SyscallResponse::Ok
-        }
-
-        Syscall::ExtendHeap { top } => {
-            with_task_manager(|tm| tm.extend_heap(top));
-            SyscallResponse::Ok
-        }
-
-        Syscall::GetTaskId => SyscallResponse::GetTaskId { task_id: id },
-
-        Syscall::Yield => {
-            with_task_manager(TaskManager::yield_current);
-            SyscallResponse::Ok
-        }
-
-        Syscall::Exit => {
-            with_task_manager(TaskManager::drop_current);
-            SyscallResponse::Ok
-        }
-    };
+    let response = handle_syscall(unsafe { syscall::get_syscall() }, info);
 
     // Maybe we've killed current task.
     if with_task_manager(|tm| tm.has_running()) {

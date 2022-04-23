@@ -22,6 +22,7 @@ mod kernel_task;
 mod memory;
 mod qemu;
 mod serial_log;
+mod syscall;
 mod task;
 
 use core::panic::PanicInfo;

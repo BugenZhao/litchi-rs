@@ -7,7 +7,7 @@ pub use frame::{Registers, TaskFrame};
 use paste::paste;
 
 pub use self::manager::schedule_and_run;
-pub use self::manager::{with_task_manager, TaskManager};
+pub use self::manager::{with_task_manager, TaskManager, TaskInfo};
 
 macro_rules! include_binary {
     ($name: ident) => {
