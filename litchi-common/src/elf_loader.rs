@@ -1,7 +1,7 @@
 use core::intrinsics::copy_nonoverlapping;
 
 use itertools::{EitherOrBoth, Itertools};
-use log::{info, debug};
+use log::{debug, info};
 use x86_64::{
     structures::paging::{
         FrameAllocator, Mapper, OffsetPageTable, Page, PageSize, PageTableFlags, PhysFrame,
