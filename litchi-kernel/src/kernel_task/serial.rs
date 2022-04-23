@@ -5,7 +5,7 @@ use crate::{kernel_task::mpsc, print};
 
 lazy_static::lazy_static! {
     static ref CHANNEL: (mpsc::Sender<char>, Mutex<Option<mpsc::Receiver<char>>>) = {
-        let (tx, rx) = mpsc::mpsc_channel();
+        let (tx, rx) = mpsc::channel();
         (tx, Mutex::new(Some(rx)))
     };
 }

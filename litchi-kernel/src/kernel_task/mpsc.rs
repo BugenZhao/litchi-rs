@@ -57,7 +57,7 @@ impl<T> Stream for Receiver<T> {
     }
 }
 
-pub fn mpsc_channel<T>() -> (Sender<T>, Receiver<T>) {
+pub fn channel<T>() -> (Sender<T>, Receiver<T>) {
     let inner = Arc::new(Inner::default());
     let tx = Sender {
         inner: inner.clone(),

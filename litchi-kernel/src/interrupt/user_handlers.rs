@@ -72,6 +72,7 @@ fn syscall_inner() {
 }
 
 fn apic_timer_inner() {
+    kernel_task::time::inc_slice();
     print!(".");
 
     end_of_interrupt();
