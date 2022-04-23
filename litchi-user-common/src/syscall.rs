@@ -1,6 +1,8 @@
 use enum_as_inner::EnumAsInner;
 use x86_64::VirtAddr;
 
+use crate::resource::ResourceHandle;
+
 use self::buffer::{SYSCALL_IN_BUFFER, SYSCALL_OUT_BUFFER};
 
 pub mod buffer;
@@ -14,6 +16,7 @@ pub enum Syscall<'a> {
     GetTaskId,
     Yield,
     Sleep { slice: usize },
+    Open { path: &'a str },
     Exit,
 }
 
@@ -21,6 +24,7 @@ pub enum Syscall<'a> {
 pub enum SyscallResponse {
     Ok,
     GetTaskId { task_id: u64 },
+    Open { handle: Option<ResourceHandle> },
 }
 
 // For user

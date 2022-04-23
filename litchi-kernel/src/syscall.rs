@@ -1,38 +1,56 @@
+use alloc::{borrow::ToOwned, vec};
 use litchi_user_common::syscall::{Syscall, SyscallResponse};
 use log::warn;
 
 use crate::{
-    kernel_task, print,
+    kernel_task, print, resource,
     task::{with_task_manager, TaskInfo, TaskManager},
 };
 
+pub fn check_syscall_legal(syscall: &Syscall) -> bool {
+    fn str_addr(s: &str) -> (*const (), usize) {
+        (s.as_ptr() as *const (), s.as_bytes().len())
+    }
+
+    let addrs = match syscall {
+        Syscall::Print { str } => vec![str_addr(str)],
+        Syscall::Open { path } => vec![str_addr(path)],
+        _ => vec![],
+    };
+
+    with_task_manager(|tm| {
+        let page_table = tm.current_page_table().unwrap();
+        let illegal = addrs
+            .into_iter()
+            .find(|(base, len)| !page_table.check_user_accessible(*base, *len));
+
+        if let Some(illegal) = illegal {
+            let current_task = tm.current_info().unwrap().clone();
+            warn!(
+                "illegal access to {:?}, killed it: {:?}",
+                illegal, current_task,
+            );
+            tm.drop_current();
+            false
+        } else {
+            true
+        }
+    })
+}
+
 pub fn handle_syscall(syscall: Syscall, task_info: TaskInfo) -> SyscallResponse {
+    if !check_syscall_legal(&syscall) {
+        return SyscallResponse::Ok;
+    }
+
     match syscall {
         Syscall::Print { str } => {
-            let bytes = str.as_bytes();
-            let legal = with_task_manager(|tm| {
-                let page_table = tm.current_page_table().unwrap();
-                page_table.check_user_accessible(bytes.as_ptr() as *const (), bytes.len())
-            });
-
-            if legal {
-                print!("{}", str);
-            } else {
-                with_task_manager(|tm| {
-                    let current_task = tm.current_info().unwrap().clone();
-                    warn!(
-                        "illegal access for printing, killed it: {:?}, bytes {:?}",
-                        current_task,
-                        bytes.as_ptr_range()
-                    );
-                    tm.drop_current();
-                });
-            }
+            print!("{}", str);
             SyscallResponse::Ok
         }
 
         Syscall::ExtendHeap { top } => {
-            with_task_manager(|tm| tm.extend_heap(top));
+            with_task_manager(|tm| tm.extend_current_heap(top));
             SyscallResponse::Ok
         }
 
@@ -54,6 +72,12 @@ pub fn handle_syscall(syscall: Syscall, task_info: TaskInfo) -> SyscallResponse 
                 });
             }
             SyscallResponse::Ok
+        }
+
+        Syscall::Open { path } => {
+            let handle = resource::open(path.to_owned())
+                .map(|resource| with_task_manager(|tm| tm.add_current_resources(resource)));
+            SyscallResponse::Open { handle }
         }
 
         Syscall::Exit => {

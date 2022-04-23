@@ -14,6 +14,7 @@ use lazy_static::lazy_static;
 use litchi_common::elf_loader::{ElfLoader, LoaderConfig};
 use litchi_user_common::{
     heap::USER_HEAP_BASE_ADDR,
+    resource::ResourceHandle,
     syscall::{
         buffer::{SYSCALL_BUFFER_PAGES, SYSCALL_IN_ADDR, SYSCALL_OUT_ADDR},
         SyscallResponse,
@@ -34,6 +35,7 @@ use crate::{
     gdt::GDT,
     kernel_task,
     memory::{PageTableWrapper, KERNEL_PAGE_TABLE},
+    resource::BoxedResource,
     task::frame::Registers,
     BOOT_INFO,
 };
@@ -97,6 +99,8 @@ struct Task {
 
     frame: Option<TaskFrame>,
 
+    resources: BTreeMap<ResourceHandle, BoxedResource>,
+
     pre_schduling: Option<PreScheduling>,
 }
 
@@ -135,6 +139,7 @@ impl Task {
             heap_top: VirtAddr::zero(), // unused
             page_table: TaskPageTable::Kernel(&KERNEL_PAGE_TABLE),
             frame: Some(frame),
+            resources: Default::default(),
             pre_schduling: None,
         }
     }
@@ -266,6 +271,7 @@ impl TaskManager {
             heap_top: USER_HEAP_BASE_ADDR,
             page_table: TaskPageTable::User(page_table),
             frame: Some(frame),
+            resources: Default::default(),
             pre_schduling: None,
         };
 
@@ -376,7 +382,7 @@ impl TaskManager {
         self.add_to_ready(task);
     }
 
-    pub fn extend_heap(&mut self, top: VirtAddr) {
+    pub fn extend_current_heap(&mut self, top: VirtAddr) {
         let top = top.align_up(Size4KiB::SIZE);
         let task = self.running.as_mut().expect("no task running");
 
@@ -414,6 +420,19 @@ impl TaskManager {
                 task.heap_top, task.info.id
             );
         }
+    }
+
+    pub fn add_current_resources(&mut self, resource: BoxedResource) -> ResourceHandle {
+        let task = self.running.as_mut().expect("no task running");
+        let map = &mut task.resources;
+        let new_handle = map
+            .keys()
+            .last()
+            .copied()
+            .map(|h| ResourceHandle(h.0 + 1))
+            .unwrap_or_default();
+        map.insert(new_handle, resource);
+        new_handle
     }
 
     pub fn has_running(&self) -> bool {

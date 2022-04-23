@@ -22,6 +22,7 @@ mod interrupt;
 mod kernel_task;
 mod memory;
 mod qemu;
+mod resource;
 mod serial_log;
 mod syscall;
 mod task;

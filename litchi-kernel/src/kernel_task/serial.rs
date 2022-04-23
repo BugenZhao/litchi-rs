@@ -14,6 +14,10 @@ pub fn push(ch: char) {
     CHANNEL.0.send_one(ch);
 }
 
+pub fn subscribe() -> broadcast::Receiver<char> {
+    CHANNEL.0.subscribe()
+}
+
 pub(super) async fn echo() {
     let rx = CHANNEL.1.lock().take().expect("echo can be run only once");
     #[for_await]
