@@ -15,6 +15,7 @@ lazy_static::lazy_static! {
 }
 
 pub fn inc_slice() {
+    // crate::print!(".");
     let old_count = SLICE_COUNT.fetch_add(1, Ordering::SeqCst);
     let count = old_count + 1;
     if let Some(notifers) = NOTIFIERS.lock().remove(&count) {
@@ -35,9 +36,4 @@ pub async fn sleep(slice: usize) {
         .push(tx);
 
     rx.next().await.unwrap();
-}
-
-pub(super) async fn sleep_2_example() {
-    sleep(2).await;
-    log::info!("slept 2 slices");
 }

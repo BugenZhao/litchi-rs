@@ -9,7 +9,7 @@ use x86_64::{
 use crate::{
     define_frame_saving_handler,
     interrupt::local_apic::end_of_interrupt,
-    kernel_task, print,
+    kernel_task,
     qemu::{exit, ExitCode},
     serial_log::DEBUG_SERIAL,
     syscall::handle_syscall,
@@ -34,7 +34,6 @@ fn syscall_inner() {
 
 fn apic_timer_inner() {
     kernel_task::time::inc_slice();
-    print!(".");
 
     end_of_interrupt();
 }

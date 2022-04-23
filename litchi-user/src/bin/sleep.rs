@@ -9,7 +9,7 @@ use litchi_user::{
 #[no_mangle]
 extern "C" fn main() {
     let id = sys_get_task_id();
-    let sleep_slices = 5;
+    let sleep_slices = 50;
 
     println!("Task {}: hello", id);
     sys_sleep(sleep_slices);

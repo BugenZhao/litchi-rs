@@ -1,13 +1,14 @@
 #![no_std]
 #![no_main]
+#![feature(let_else)]
 
 extern crate alloc;
 
 use alloc::{string::String, vec, vec::Vec};
 use anyhow::{anyhow, Error, Result};
 use litchi_user::{
-    println,
-    syscall::{sys_open, sys_read},
+    print, println,
+    syscall::{sys_open, sys_read, sys_sleep},
 };
 use litchi_user_common::resource::ResourceHandle;
 
@@ -55,12 +56,42 @@ impl Term {
     }
 }
 
+fn handle<'a>(command: String, mut args: impl Iterator<Item = &'a str>) -> Result<()> {
+    let mut next_arg = || args.next().ok_or_else(|| anyhow!("expect argument"));
+
+    match command.as_str() {
+        "echo" => {
+            let content = args.collect::<Vec<_>>().join(" ");
+            println!("{}", content);
+        }
+        "sleep" => {
+            let slice: usize = next_arg()?.parse().map_err(Error::msg)?;
+            sys_sleep(slice);
+        }
+        _ => return Err(anyhow!("unknown command: `{}`", command)),
+    }
+
+    Ok(())
+}
+
 #[no_mangle]
 extern "C" fn main() {
     let mut term = Term::open().unwrap();
+    println!("Welcome to the Litchi Shell.");
 
     loop {
+        print!("> ");
         let line = term.read_line().unwrap();
-        println!("term received: \"{}\"", line);
+        let line = line.trim();
+
+        let mut tokens = line.split_ascii_whitespace();
+        let Some(command) = tokens.next() else {
+            continue;
+        };
+
+        match handle(command.to_lowercase(), tokens) {
+            Ok(_) => {}
+            Err(e) => println!("Error: {}", e),
+        }
     }
 }

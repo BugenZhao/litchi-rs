@@ -15,7 +15,7 @@ fn new_local_apic() -> LocalApic {
         .error_vector(UserInterrupt::ApicError.as_index())
         .spurious_vector(UserInterrupt::ApicSpurious.as_index())
         .timer_vector(UserInterrupt::ApicTimer.as_index())
-        .timer_initial(10_000_000 * 100)
+        .timer_initial(10_000_000 * 10)
         .set_xapic_base(ACPI.apic_info.local_apic_address) // or lapic::xapic_base()
         .build()
         .expect("failed to build lapic")
