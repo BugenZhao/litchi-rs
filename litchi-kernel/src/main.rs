@@ -10,6 +10,7 @@
 #![feature(let_else)]
 #![feature(proc_macro_hygiene)]
 #![feature(stmt_expr_attributes)]
+#![feature(drain_filter)]
 
 extern crate alloc;
 

@@ -1,5 +1,5 @@
 mod executor;
-pub mod mpsc;
+pub mod broadcast;
 pub mod serial;
 pub mod time;
 
