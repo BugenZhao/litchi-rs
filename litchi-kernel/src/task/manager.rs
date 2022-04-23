@@ -161,7 +161,7 @@ impl TaskManager {
             .values_mut()
             .find(|q| !q.is_empty())
             .expect("there should be always an idle task")
-            .pop_back()
+            .pop_front()
             .unwrap()
     }
 
