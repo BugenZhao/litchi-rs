@@ -99,7 +99,7 @@ struct Task {
 
     frame: Option<TaskFrame>,
 
-    resources: BTreeMap<ResourceHandle, BoxedResource>,
+    resources: BTreeMap<ResourceHandle, Arc<BoxedResource>>,
 
     pre_schduling: Option<PreScheduling>,
 }
@@ -154,10 +154,14 @@ pub struct PendingTaskHandle {
 }
 
 impl PendingTaskHandle {
-    pub fn resume_syscall_response(self, response: SyscallResponse) {
+    pub fn resume_syscall_response(
+        self,
+        response: impl FnOnce() -> SyscallResponse + Send + 'static,
+    ) {
         with_task_manager(|tm| {
-            tm.resume_task(self, move || unsafe {
-                litchi_user_common::syscall::response(response);
+            tm.resume_task(self, move || {
+                let response = response();
+                unsafe { litchi_user_common::syscall::response(response) };
             })
         })
     }
@@ -422,7 +426,7 @@ impl TaskManager {
         }
     }
 
-    pub fn add_current_resources(&mut self, resource: BoxedResource) -> ResourceHandle {
+    pub fn add_current_resources(&mut self, resource: Arc<BoxedResource>) -> ResourceHandle {
         let task = self.running.as_mut().expect("no task running");
         let map = &mut task.resources;
         let new_handle = map
@@ -433,6 +437,11 @@ impl TaskManager {
             .unwrap_or_default();
         map.insert(new_handle, resource);
         new_handle
+    }
+
+    pub fn get_current_resource(&self, handle: ResourceHandle) -> Option<Arc<BoxedResource>> {
+        let task = self.running.as_ref().expect("no task running");
+        task.resources.get(&handle).cloned()
     }
 
     pub fn has_running(&self) -> bool {

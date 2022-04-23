@@ -1,5 +1,8 @@
 use alloc::{borrow::ToOwned, vec};
-use litchi_user_common::syscall::{Syscall, SyscallResponse};
+use litchi_user_common::{
+    resource::ResourceError,
+    syscall::{Syscall, SyscallResponse},
+};
 use log::warn;
 
 use crate::{
@@ -38,7 +41,7 @@ pub fn check_syscall_legal(syscall: &Syscall) -> bool {
     })
 }
 
-pub fn handle_syscall(syscall: Syscall, task_info: TaskInfo) -> SyscallResponse {
+pub fn handle_syscall(syscall: Syscall<'static>, task_info: TaskInfo) -> SyscallResponse {
     if !check_syscall_legal(&syscall) {
         return SyscallResponse::Ok;
     }
@@ -68,7 +71,7 @@ pub fn handle_syscall(syscall: Syscall, task_info: TaskInfo) -> SyscallResponse 
                 let task = with_task_manager(TaskManager::pend_current);
                 kernel_task::spawn(async move {
                     kernel_task::time::sleep(slice).await;
-                    task.resume_syscall_response(SyscallResponse::Ok)
+                    task.resume_syscall_response(|| SyscallResponse::Ok)
                 });
             }
             SyscallResponse::Ok
@@ -76,8 +79,32 @@ pub fn handle_syscall(syscall: Syscall, task_info: TaskInfo) -> SyscallResponse 
 
         Syscall::Open { path } => {
             let handle = resource::open(path.to_owned())
-                .map(|resource| with_task_manager(|tm| tm.add_current_resources(resource)));
+                .map(|resource| with_task_manager(|tm| tm.add_current_resources(resource.into())));
             SyscallResponse::Open { handle }
+        }
+
+        Syscall::Read { handle, buf } => {
+            match with_task_manager(|tm| tm.get_current_resource(handle)) {
+                Some(resource) => {
+                    let task = with_task_manager(TaskManager::pend_current);
+                    kernel_task::spawn(async move {
+                        match resource.read(buf.len()).await {
+                            Ok(read) => task.resume_syscall_response(move || {
+                                let len = read.len();
+                                buf[..len].copy_from_slice(&read);
+                                SyscallResponse::Read { len: Ok(len) }
+                            }),
+                            Err(err) => task.resume_syscall_response(|| SyscallResponse::Read {
+                                len: Err(err),
+                            }),
+                        }
+                    });
+                    SyscallResponse::Ok
+                }
+                None => SyscallResponse::Read {
+                    len: Err(ResourceError::NotExists),
+                },
+            }
         }
 
         Syscall::Exit => {
