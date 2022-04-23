@@ -34,8 +34,8 @@ pub fn load() {
         // task_manager.load_user("evil_memory_access_2", EVIL_MEMORY_ACCESS_2_BIN);
         // task_manager.load_user("evil_memory_access_3", EVIL_MEMORY_ACCESS_3_BIN);
         // task_manager.load_user("evil_memory_access_4", EVIL_MEMORY_ACCESS_4_BIN);
-        // task_manager.load_user("loop1", LOOP_BIN);
-        // task_manager.load_user("loop2", LOOP_BIN);
+        task_manager.load_user("loop1", LOOP_BIN);
+        task_manager.load_user("loop2", LOOP_BIN);
         task_manager.load_user("loop3", LOOP_BIN);
     });
 }

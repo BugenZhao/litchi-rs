@@ -27,6 +27,7 @@ use x86_64::{
 
 use crate::{
     gdt::GDT,
+    kernel_task,
     memory::{PageTableWrapper, KERNEL_PAGE_TABLE},
     task::frame::Registers,
     BOOT_INFO,
@@ -102,7 +103,7 @@ impl Task {
             ds: segment,
             regs: Registers::default(),
             frame: InterruptStackFrameValue {
-                instruction_pointer: VirtAddr::from_ptr(idle as *const fn() -> !),
+                instruction_pointer: VirtAddr::from_ptr(kernel_task::run as *const fn() -> !),
                 code_segment: segment,
                 cpu_flags: 0x0000_0200, // enable interrupts
                 stack_pointer: BOOT_INFO.get().unwrap().kernel_stack_top,

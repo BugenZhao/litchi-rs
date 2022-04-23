@@ -6,6 +6,8 @@
 #![feature(type_name_of_val)]
 #![feature(naked_functions)]
 #![feature(asm_sym)]
+#![feature(trait_alias)]
+#![feature(let_else)]
 
 extern crate alloc;
 
@@ -14,6 +16,7 @@ mod frame_allocator;
 mod gdt;
 mod heap;
 mod interrupt;
+mod kernel_task;
 mod memory;
 mod qemu;
 mod serial_log;

@@ -8,6 +8,8 @@ edition = "2021"
 [dependencies]
 acpi = "4.1"
 align-data = "0.1"
+crossbeam-queue = { version = "0.3", default-features = false, features = ["alloc"] }
+futures = { version = "0.3", default-features = false }
 itertools = { version = "0.10", default-features = false }
 lazy_static = { version = "1.4", features = ["spin_no_std"] }
 linked_list_allocator = "0.9"
