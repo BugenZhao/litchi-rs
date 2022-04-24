@@ -29,6 +29,7 @@ pub enum Syscall<'a> {
         handle: ResourceHandle,
         buf: &'a mut [u8],
     },
+    Halt,
     Exit,
 }
 

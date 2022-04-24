@@ -44,3 +44,10 @@ pub fn sys_exit() -> ! {
         core::intrinsics::unreachable()
     }
 }
+
+pub fn sys_halt() -> ! {
+    unsafe {
+        syscall(Syscall::Halt);
+        core::intrinsics::unreachable()
+    }
+}

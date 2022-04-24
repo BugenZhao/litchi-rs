@@ -107,6 +107,10 @@ pub fn handle_syscall(syscall: Syscall<'static>, task_info: TaskInfo) -> Syscall
             }
         }
 
+        Syscall::Halt => {
+            crate::qemu::exit(crate::qemu::ExitCode::Success);
+        }
+
         Syscall::Exit => {
             with_task_manager(TaskManager::drop_current);
             SyscallResponse::Ok

@@ -1,6 +1,7 @@
 #![no_std]
 #![no_main]
 #![feature(let_else)]
+#![feature(bench_black_box)]
 
 extern crate alloc;
 
@@ -8,7 +9,8 @@ use alloc::{string::String, vec, vec::Vec};
 use anyhow::{anyhow, Error, Result};
 use litchi_user::{
     print, println,
-    syscall::{sys_open, sys_read, sys_sleep},
+    syscall::{sys_halt, sys_open, sys_read, sys_sleep},
+    tsc::read_tsc,
 };
 use litchi_user_common::resource::ResourceHandle;
 
@@ -56,6 +58,29 @@ impl Term {
     }
 }
 
+fn bench<const SYSCALL: bool>() {
+    let start = read_tsc();
+    for _ in 0..1000 {
+        let mut v = vec![0i64; 65536];
+        v[1] = 1;
+        for i in 2..(v.len() - 1) {
+            v[i] = core::hint::black_box(v[i - 1].wrapping_add(v[i - 2]));
+            if SYSCALL && i % 8192 == 0 {
+                sys_sleep(0);
+            }
+        }
+        core::hint::black_box(v.last().unwrap());
+    }
+    let end = read_tsc();
+    println!(
+        "bench with syscall {:5}: end {} - start {} = {}",
+        SYSCALL,
+        end,
+        start,
+        end - start
+    );
+}
+
 fn handle<'a>(command: String, mut args: impl Iterator<Item = &'a str>) -> Result<()> {
     let mut next_arg = || args.next().ok_or_else(|| anyhow!("expect argument"));
 
@@ -67,6 +92,20 @@ fn handle<'a>(command: String, mut args: impl Iterator<Item = &'a str>) -> Resul
         "sleep" => {
             let slice: usize = next_arg()?.parse().map_err(Error::msg)?;
             sys_sleep(slice);
+        }
+        "halt" => {
+            sys_halt();
+        }
+        "tsc" => {
+            println!("tsc: {}", read_tsc());
+        }
+        "bench" => {
+            for _ in 0..10 {
+                bench::<true>();
+            }
+            for _ in 0..10 {
+                bench::<false>();
+            }
         }
         _ => return Err(anyhow!("unknown command: `{}`", command)),
     }
