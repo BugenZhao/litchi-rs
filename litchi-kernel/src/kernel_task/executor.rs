@@ -11,7 +11,7 @@ use futures::Future;
 use lazy_static::lazy_static;
 use spin::Mutex;
 
-pub trait TaskFuture = Future<Output = ()> + 'static;
+pub trait TaskFuture = Future<Output = ()> + Send + 'static;
 pub type BoxedTaskFuture = Pin<Box<dyn TaskFuture>>;
 
 pub struct KernelTask {
@@ -58,9 +58,6 @@ pub struct KernelTaskExecutor {
 
     ready: Arc<ArrayQueue<u64>>,
 }
-
-unsafe impl Send for KernelTaskExecutor {}
-unsafe impl Sync for KernelTaskExecutor {}
 
 impl KernelTaskExecutor {
     fn new() -> Self {
