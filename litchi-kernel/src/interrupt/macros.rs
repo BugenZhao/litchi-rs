@@ -16,20 +16,6 @@ macro_rules! define_frame_saving_handler {
             use x86_64::registers::{self, segmentation::Segment};
             use $crate::task::{schedule_and_run, with_task_manager, TaskFrame};
 
-            extern "C" fn _frame_saving_inner(mut frame: TaskFrame) {
-                assert!(! x86_64::instructions::interrupts::are_enabled());
-
-                frame.ds = registers::segmentation::DS::get_reg().0 as u64;
-                frame.es = registers::segmentation::ES::get_reg().0 as u64;
-
-                // Put the task frame back to the `Task` struct of the running task.
-                with_task_manager(|task_manager| task_manager.put_back(frame, $yield));
-                // Then run the given handler inner.
-                let _ = $handler_inner();
-                // After that, we schedule a next task to run. This function never returns.
-                schedule_and_run();
-            }
-
             unsafe {
                 asm!(
                     // The order must be consistent with [`TaskFrame`].
@@ -55,10 +41,24 @@ macro_rules! define_frame_saving_handler {
                     "mov    qword ptr [rsp - 8],  rax",
                     "lea    rdi, [rsp - 136]",
                     "sub    rsp, 136",
-                    "call   {}",
-                    sym _frame_saving_inner,
+                    "call   {}", // We've assembled `TaskFrame`, jump to _inner.
+                    sym _inner,
                     options(noreturn)
                 )
+            }
+
+            extern "C" fn _inner(mut frame: TaskFrame) {
+                assert!(! x86_64::instructions::interrupts::are_enabled());
+
+                frame.ds = registers::segmentation::DS::get_reg().0 as u64;
+                frame.es = registers::segmentation::ES::get_reg().0 as u64;
+
+                // Put the task frame back to the `Task` struct of the running task.
+                with_task_manager(|task_manager| task_manager.put_back(frame, $yield));
+                // Then run the given handler inner.
+                let _ = $handler_inner();
+                // After that, we schedule a next task to run. This function never returns.
+                schedule_and_run();
             }
         }
     };

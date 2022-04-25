@@ -8,6 +8,8 @@ use log::warn;
 use crate::task::{with_task_manager, TaskInfo, TaskManager};
 use crate::{kernel_task, print, resource};
 
+/// User may provide some invalid or privileged memory to us within the syscall request. We should
+/// check them before safely handling the request.
 pub fn check_syscall_legal(syscall: &Syscall) -> bool {
     fn str_addr(s: &str) -> (*const (), usize) {
         (s.as_ptr() as *const (), s.as_bytes().len())
@@ -25,6 +27,7 @@ pub fn check_syscall_legal(syscall: &Syscall) -> bool {
             .into_iter()
             .find(|(base, len)| !page_table.check_user_accessible(*base, *len));
 
+        // Kill it on illegal memory requests.
         if let Some(illegal) = illegal {
             let current_task = tm.current_info().unwrap().clone();
             warn!(

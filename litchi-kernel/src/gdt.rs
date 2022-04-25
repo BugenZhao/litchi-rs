@@ -23,9 +23,6 @@ impl TrapStack {
     }
 }
 
-static DOUBLE_FAULT_STACK: TrapStack = TrapStack::new();
-static USER_INTERRUPT_STACK: TrapStack = TrapStack::new();
-
 lazy_static! {
     static ref KERNEL_TSS: TaskStateSegment = new_kernel_tss();
 }
@@ -34,6 +31,7 @@ fn new_kernel_tss() -> TaskStateSegment {
     let mut tss = TaskStateSegment::new();
 
     tss.interrupt_stack_table[IstIndex::DoubleFault as usize] = {
+        static DOUBLE_FAULT_STACK: TrapStack = TrapStack::new();
         let stack_top = DOUBLE_FAULT_STACK.0.as_ptr_range().end;
         debug!(
             "stack for double fault: {:?}",
@@ -43,6 +41,7 @@ fn new_kernel_tss() -> TaskStateSegment {
     };
 
     tss.interrupt_stack_table[IstIndex::UserInterrupt as usize] = {
+        static USER_INTERRUPT_STACK: TrapStack = TrapStack::new();
         let stack_top = USER_INTERRUPT_STACK.0.as_ptr_range().end;
         debug!(
             "stack for user interrupt: {:?}",

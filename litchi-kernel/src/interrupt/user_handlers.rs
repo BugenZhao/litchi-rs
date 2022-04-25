@@ -21,7 +21,7 @@ fn syscall_inner() {
 
     let response = handle_syscall(unsafe { syscall::get_syscall() }, info);
 
-    // Maybe we've killed current task.
+    // Maybe we've killed or yielded current task, so we first check whether it is still running.
     if with_task_manager(|tm| tm.has_running()) {
         unsafe { syscall::response(response) };
     }

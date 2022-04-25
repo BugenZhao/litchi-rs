@@ -139,6 +139,7 @@ pub struct PendingTaskHandle {
 }
 
 impl PendingTaskHandle {
+    /// Resume this task and lazily call the closure to get the syscall response on next scheduling.
     pub fn resume_syscall_response(
         self,
         response: impl FnOnce() -> SyscallResponse + Send + 'static,
@@ -304,6 +305,13 @@ impl TaskManager {
         task.frame.take().expect("no frame for task")
     }
 
+    /// Put back the task frame for the current running task. Used everytime coming from the task by
+    /// interrupts.
+    ///
+    /// For task preemption based on the timer, the `yield_task` will be true, which means to put
+    /// the running task to the back of the ready queue. For others like serial interrupt or system
+    /// calls, we may want to preserve the time slice of this task, so `yield_task` will be false
+    /// and we'll keep this task running on next scheduling.
     pub fn put_back(&mut self, frame: TaskFrame, yield_task: bool) {
         let task = self.running.as_mut().expect("no task running");
 
@@ -325,6 +333,7 @@ impl TaskManager {
         }
     }
 
+    /// Put the current running task to the back of the ready queue.
     pub fn yield_current(&mut self) {
         if self.ready.is_empty() {
             debug!("empty ready queue, no need to yield");
@@ -334,6 +343,8 @@ impl TaskManager {
         }
     }
 
+    /// Drop the current running task. Based on the RAII, all of the other resources will be
+    /// released as well.
     pub fn drop_current(&mut self) {
         KERNEL_PAGE_TABLE.load();
 
@@ -341,6 +352,11 @@ impl TaskManager {
         info!("dropped current task: {:?}", task.info);
     }
 
+    /// Pend the current running task by putting it to the pending queue.
+    ///
+    /// Returns a [`PendingTaskHandle`] which can be used to resume the task. If the caller dropped
+    /// the handle instead of resuming the task, The task manager will find it on next scheduling
+    /// and clean-up the resources by killing the zombie task.
     pub fn pend_current(&mut self) -> PendingTaskHandle {
         KERNEL_PAGE_TABLE.load();
 
@@ -355,6 +371,12 @@ impl TaskManager {
         PendingTaskHandle { id, _token: token }
     }
 
+    /// Resume the given task by transfering it from the pending task queue to the ready queue.
+    ///
+    /// The given `pre_scheduling` closure will be saved to the task frame and be called RIGHT
+    /// BEFORE this task will be scheduled and AFTER the page table is loaded, since it may rely on
+    /// the memory space of this task. For example, we can copy the kernel buffer to the user's and
+    /// place the syscall response.
     pub fn resume_task(
         &mut self,
         task_handle: PendingTaskHandle,
