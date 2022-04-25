@@ -1,12 +1,13 @@
-use acpi::platform::interrupt::{InterruptSourceOverride, IoApic as IoApicInfo};
 use alloc::vec::Vec;
+
+use acpi::platform::interrupt::{InterruptSourceOverride, IoApic as IoApicInfo};
 use log::info;
 use spin::Mutex;
 use x2apic::ioapic::{IoApic, IrqFlags, IrqMode, RedirectionTableEntry};
 
-use crate::{acpi::ACPI, interrupt::UserInterrupt};
-
 use super::{RawUserInterrupt, IO_APIC_INTERRUPT_OFFSET};
+use crate::acpi::ACPI;
+use crate::interrupt::UserInterrupt;
 
 lazy_static::lazy_static! {
     static ref IO_APICS: Mutex<IoApics> = Mutex::new(IoApics::new_and_init());

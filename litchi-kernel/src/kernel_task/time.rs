@@ -1,6 +1,7 @@
+use alloc::collections::BTreeMap;
+use alloc::vec::Vec;
 use core::sync::atomic::{AtomicU64, Ordering};
 
-use alloc::{collections::BTreeMap, vec::Vec};
 use futures::StreamExt;
 use spin::Mutex;
 

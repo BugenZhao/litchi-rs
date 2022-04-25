@@ -1,18 +1,18 @@
-use core::{fmt::Debug, intrinsics::copy_nonoverlapping};
+use core::fmt::Debug;
+use core::intrinsics::copy_nonoverlapping;
 
 use log::info;
 use spin::Mutex;
-use x86_64::{
-    instructions,
-    registers::control::{Cr3, Cr3Flags},
-    structures::paging::{
-        mapper::TranslateResult, FrameAllocator, Mapper, OffsetPageTable, Page, PageSize,
-        PageTable, PageTableFlags, PhysFrame, Size4KiB, Translate,
-    },
-    VirtAddr,
+use x86_64::registers::control::{Cr3, Cr3Flags};
+use x86_64::structures::paging::mapper::TranslateResult;
+use x86_64::structures::paging::{
+    FrameAllocator, Mapper, OffsetPageTable, Page, PageSize, PageTable, PageTableFlags, PhysFrame,
+    Size4KiB, Translate,
 };
+use x86_64::{instructions, VirtAddr};
 
-use crate::{frame_allocator::RaiiFrameAllocator, BOOT_INFO};
+use crate::frame_allocator::RaiiFrameAllocator;
+use crate::BOOT_INFO;
 
 pub struct PageTableWrapper {
     frame: PhysFrame,

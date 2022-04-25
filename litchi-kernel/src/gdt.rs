@@ -1,14 +1,9 @@
 use lazy_static::lazy_static;
 use log::{debug, info};
-use x86_64::{
-    instructions,
-    registers::{
-        self,
-        segmentation::{Segment, SegmentSelector},
-    },
-    structures::{gdt::GlobalDescriptorTable, tss::TaskStateSegment},
-    VirtAddr,
-};
+use x86_64::registers::segmentation::{Segment, SegmentSelector};
+use x86_64::structures::gdt::GlobalDescriptorTable;
+use x86_64::structures::tss::TaskStateSegment;
+use x86_64::{instructions, registers, VirtAddr};
 
 #[repr(u16)]
 pub enum IstIndex {

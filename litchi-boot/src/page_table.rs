@@ -1,13 +1,9 @@
 use litchi_common::elf_loader::allocate_zeroed_frame;
 use log::debug;
-
-use x86_64::{
-    structures::paging::{
-        FrameAllocator, Mapper, OffsetPageTable, Page, PageTableFlags, PhysFrame, Size1GiB,
-        Size4KiB,
-    },
-    PhysAddr, VirtAddr,
+use x86_64::structures::paging::{
+    FrameAllocator, Mapper, OffsetPageTable, Page, PageTableFlags, PhysFrame, Size1GiB, Size4KiB,
 };
+use x86_64::{PhysAddr, VirtAddr};
 
 pub fn create_kernel_page_table(
     allocator: &mut impl FrameAllocator<Size4KiB>,

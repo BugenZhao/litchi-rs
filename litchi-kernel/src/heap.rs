@@ -1,15 +1,12 @@
 use alloc::vec::Vec;
-use core::{
-    any::type_name_of_val,
-    sync::atomic::{AtomicBool, Ordering},
-};
+use core::any::type_name_of_val;
+use core::sync::atomic::{AtomicBool, Ordering};
+
 use linked_list_allocator::LockedHeap;
 use log::info;
 use size_format::SizeFormatterBinary;
-use x86_64::{
-    structures::paging::{Page, PageSize, PageTableFlags, Size4KiB},
-    VirtAddr,
-};
+use x86_64::structures::paging::{Page, PageSize, PageTableFlags, Size4KiB};
+use x86_64::VirtAddr;
 
 use crate::memory::KERNEL_PAGE_TABLE;
 

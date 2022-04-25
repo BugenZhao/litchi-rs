@@ -1,12 +1,14 @@
-use alloc::{boxed::Box, vec::Vec};
+use alloc::boxed::Box;
+use alloc::vec::Vec;
+
 use async_trait::async_trait;
 use futures::StreamExt;
 use litchi_user_common::resource::ResourceResult;
 use spin::Mutex;
 
-use crate::kernel_task::{broadcast::Receiver, serial};
-
 use super::Resource;
+use crate::kernel_task::broadcast::Receiver;
+use crate::kernel_task::serial;
 
 pub struct Term {
     serial_input_rx: Mutex<Receiver<u8>>,

@@ -1,20 +1,15 @@
 use litchi_user_common::syscall;
 use log::{debug, error, warn};
-use x86_64::{
-    registers::segmentation::SegmentSelector,
-    structures::idt::{InterruptStackFrame, PageFaultErrorCode},
-    PrivilegeLevel,
-};
+use x86_64::registers::segmentation::SegmentSelector;
+use x86_64::structures::idt::{InterruptStackFrame, PageFaultErrorCode};
+use x86_64::PrivilegeLevel;
 
-use crate::{
-    define_frame_saving_handler,
-    interrupt::local_apic::end_of_interrupt,
-    kernel_task,
-    qemu::{exit, ExitCode},
-    serial_log::DEBUG_SERIAL,
-    syscall::handle_syscall,
-    task::{schedule_and_run, with_task_manager},
-};
+use crate::interrupt::local_apic::end_of_interrupt;
+use crate::qemu::{exit, ExitCode};
+use crate::serial_log::DEBUG_SERIAL;
+use crate::syscall::handle_syscall;
+use crate::task::{schedule_and_run, with_task_manager};
+use crate::{define_frame_saving_handler, kernel_task};
 
 define_frame_saving_handler! { syscall, syscall_inner }
 define_frame_saving_handler! { yield; apic_timer, apic_timer_inner }

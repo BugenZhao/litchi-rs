@@ -2,13 +2,12 @@ mod global;
 mod raii;
 
 use log::info;
+pub use raii::RaiiFrameAllocator;
 use spin::Mutex;
 use x86_64::structures::paging::FrameAllocator;
 
 use self::global::{GlobalFrameAllocator, FRAME_ALLOCATOR};
 use crate::BOOT_INFO;
-
-pub use raii::RaiiFrameAllocator;
 
 pub fn init() {
     let boot_info = BOOT_INFO.get().unwrap();

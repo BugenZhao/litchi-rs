@@ -1,14 +1,11 @@
-use core::{
-    iter::once,
-    pin::Pin,
-    task::{Context, Poll},
-};
+use alloc::collections::{LinkedList, VecDeque};
+use alloc::sync::{Arc, Weak};
+use core::iter::once;
+use core::pin::Pin;
+use core::task::{Context, Poll};
 
-use alloc::{
-    collections::{LinkedList, VecDeque},
-    sync::{Arc, Weak},
-};
-use futures::{task::AtomicWaker, Stream};
+use futures::task::AtomicWaker;
+use futures::Stream;
 use spin::Mutex;
 
 struct Inner<T> {

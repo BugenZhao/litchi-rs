@@ -1,13 +1,12 @@
 // https://wiki.osdev.org/MADT
 // https://uefi.org/specs/ACPI/6.4/05_ACPI_Software_Programming_Model/ACPI_Software_Programming_Model.html#finding-the-rsdp-on-uefi-enabled-systems
 
+use alloc::vec::Vec;
 use core::ptr::NonNull;
 
-use acpi::{
-    platform::{interrupt::Apic, Processor, ProcessorInfo},
-    AcpiHandler, AcpiTables,
-};
-use alloc::vec::Vec;
+use acpi::platform::interrupt::Apic;
+use acpi::platform::{Processor, ProcessorInfo};
+use acpi::{AcpiHandler, AcpiTables};
 use lazy_static::lazy_static;
 use log::info;
 

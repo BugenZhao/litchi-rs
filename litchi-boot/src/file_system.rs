@@ -1,13 +1,10 @@
 use alloc::slice;
-use uefi::{
-    prelude::BootServices,
-    proto::media::{
-        file::{File, FileAttribute, FileInfo, FileMode, FileType, RegularFile},
-        fs::SimpleFileSystem,
-    },
-    table::boot::{AllocateType, MemoryType},
-    CStr16,
-};
+
+use uefi::prelude::BootServices;
+use uefi::proto::media::file::{File, FileAttribute, FileInfo, FileMode, FileType, RegularFile};
+use uefi::proto::media::fs::SimpleFileSystem;
+use uefi::table::boot::{AllocateType, MemoryType};
+use uefi::CStr16;
 use x86_64::structures::paging::{PageSize, Size4KiB};
 
 pub fn open(boot_services: &BootServices, path: impl AsRef<str>) -> RegularFile {

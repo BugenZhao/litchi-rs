@@ -5,21 +5,19 @@
 
 extern crate alloc;
 
+use alloc::vec::Vec;
 use core::arch::asm;
 
-use alloc::vec::Vec;
-use litchi_common::{
-    elf_loader::{ElfLoader, LoaderConfig},
-    BootInfo,
-};
+use litchi_common::elf_loader::{ElfLoader, LoaderConfig};
+use litchi_common::BootInfo;
 use log::info;
-use uefi::{prelude::*, proto::console::text::Color};
-use x86_64::{
-    registers::control::{Cr3, Cr3Flags},
-    VirtAddr,
-};
+use uefi::prelude::*;
+use uefi::proto::console::text::Color;
+use x86_64::registers::control::{Cr3, Cr3Flags};
+use x86_64::VirtAddr;
 
-use crate::{frame_allocator::BootFrameAllocator, page_table::create_kernel_page_table};
+use crate::frame_allocator::BootFrameAllocator;
+use crate::page_table::create_kernel_page_table;
 
 mod file_system;
 mod frame_allocator;
@@ -77,7 +75,7 @@ fn efi_main(handle: Handle, mut system_table: SystemTable<Boot>) -> Status {
 
     let mmap_size = system_table.boot_services().memory_map_size().map_size;
     let mmap_buf = alloc::vec![0u8; mmap_size * 2].leak();
-    let mut memory_descriptors = Vec::with_capacity(128);
+    let memory_descriptors = Vec::with_capacity(128);
 
     info!("exit boot services & call the kernel entry");
 
@@ -87,13 +85,15 @@ fn efi_main(handle: Handle, mut system_table: SystemTable<Boot>) -> Status {
         .expect("failed to set color");
 
     uefi::alloc::exit_boot_services();
-    let (system_table, iter) = system_table
+    let (system_table, mem_desc_iter) = system_table
         .exit_boot_services(handle, mmap_buf)
         .expect("failed to exit boot services");
 
     // Note: we can not use log & alloc anymore.
-    for mem_desc in iter {
-        assert!(memory_descriptors.len() < memory_descriptors.capacity());
+    let cap = memory_descriptors.capacity();
+    let mut memory_descriptors = memory_descriptors;
+    for mem_desc in mem_desc_iter {
+        assert!(memory_descriptors.len() < cap);
         memory_descriptors.push(mem_desc);
     }
 

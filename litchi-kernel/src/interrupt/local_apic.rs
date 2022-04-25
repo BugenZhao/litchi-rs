@@ -2,9 +2,8 @@ use lazy_static::lazy_static;
 use spin::Mutex;
 use x2apic::lapic::{self, LocalApic};
 
-use crate::acpi::ACPI;
-
 use super::UserInterrupt;
+use crate::acpi::ACPI;
 
 lazy_static! {
     static ref LOCAL_APIC: Mutex<LocalApic> = Mutex::new(new_local_apic());

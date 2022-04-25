@@ -1,46 +1,31 @@
-use core::{
-    ops::Deref,
-    sync::atomic::{AtomicU64, Ordering},
-};
+use alloc::borrow::ToOwned;
+use alloc::boxed::Box;
+use alloc::collections::{BTreeMap, VecDeque};
+use alloc::string::String;
+use alloc::sync::{Arc, Weak};
+use core::ops::Deref;
+use core::sync::atomic::{AtomicU64, Ordering};
 
-use alloc::{
-    borrow::ToOwned,
-    boxed::Box,
-    collections::{BTreeMap, VecDeque},
-    string::String,
-    sync::{Arc, Weak},
-};
 use lazy_static::lazy_static;
 use litchi_common::elf_loader::{ElfLoader, LoaderConfig};
-use litchi_user_common::{
-    heap::USER_HEAP_BASE_ADDR,
-    resource::ResourceHandle,
-    syscall::{
-        buffer::{SYSCALL_BUFFER_PAGES, SYSCALL_IN_ADDR, SYSCALL_OUT_ADDR},
-        SyscallResponse,
-    },
+use litchi_user_common::heap::USER_HEAP_BASE_ADDR;
+use litchi_user_common::resource::ResourceHandle;
+use litchi_user_common::syscall::buffer::{
+    SYSCALL_BUFFER_PAGES, SYSCALL_IN_ADDR, SYSCALL_OUT_ADDR,
 };
+use litchi_user_common::syscall::SyscallResponse;
 use log::{debug, info, trace, warn};
 use spin::Mutex;
-use x86_64::{
-    instructions,
-    structures::{
-        idt::InterruptStackFrameValue,
-        paging::{Page, PageSize, PageTableFlags, Size4KiB},
-    },
-    VirtAddr,
-};
-
-use crate::{
-    gdt::GDT,
-    kernel_task,
-    memory::{PageTableWrapper, KERNEL_PAGE_TABLE},
-    resource::BoxedResource,
-    task::frame::Registers,
-    BOOT_INFO,
-};
+use x86_64::structures::idt::InterruptStackFrameValue;
+use x86_64::structures::paging::{Page, PageSize, PageTableFlags, Size4KiB};
+use x86_64::{instructions, VirtAddr};
 
 use super::TaskFrame;
+use crate::gdt::GDT;
+use crate::memory::{PageTableWrapper, KERNEL_PAGE_TABLE};
+use crate::resource::BoxedResource;
+use crate::task::frame::Registers;
+use crate::{kernel_task, BOOT_INFO};
 
 #[derive(Debug)]
 enum TaskPageTable {

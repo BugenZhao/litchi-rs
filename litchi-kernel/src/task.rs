@@ -6,8 +6,7 @@ mod manager;
 pub use frame::{Registers, TaskFrame};
 use paste::paste;
 
-pub use self::manager::schedule_and_run;
-pub use self::manager::{with_task_manager, TaskInfo, TaskManager};
+pub use self::manager::{schedule_and_run, with_task_manager, TaskInfo, TaskManager};
 
 macro_rules! include_binary {
     ($name: ident) => {

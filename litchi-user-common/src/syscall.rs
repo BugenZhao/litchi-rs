@@ -1,9 +1,8 @@
 use enum_as_inner::EnumAsInner;
 use x86_64::VirtAddr;
 
-use crate::resource::{ResourceHandle, ResourceResult};
-
 use self::buffer::{SYSCALL_IN_BUFFER, SYSCALL_OUT_BUFFER};
+use crate::resource::{ResourceHandle, ResourceResult};
 
 pub mod buffer;
 

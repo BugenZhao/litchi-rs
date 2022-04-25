@@ -1,15 +1,12 @@
-use core::{
-    arch::asm,
-    marker::PhantomData,
-    mem::{size_of, MaybeUninit},
-};
+use core::arch::asm;
+use core::marker::PhantomData;
+use core::mem::{size_of, MaybeUninit};
+
+use spin::Mutex;
+use x86_64::structures::paging::{PageSize, Size4KiB};
+use x86_64::VirtAddr;
 
 use super::{Syscall, SyscallResponse};
-use spin::Mutex;
-use x86_64::{
-    structures::paging::{PageSize, Size4KiB},
-    VirtAddr,
-};
 
 pub const SYSCALL_IN_ADDR: VirtAddr = VirtAddr::new_truncate(0x1333_0000_0000);
 pub const SYSCALL_OUT_ADDR: VirtAddr = VirtAddr::new_truncate(0x1334_0000_0000);

@@ -1,11 +1,7 @@
-use uefi::{
-    prelude::BootServices,
-    table::boot::{AllocateType, MemoryType},
-};
-use x86_64::{
-    structures::paging::{FrameAllocator, PhysFrame, Size4KiB},
-    PhysAddr,
-};
+use uefi::prelude::BootServices;
+use uefi::table::boot::{AllocateType, MemoryType};
+use x86_64::structures::paging::{FrameAllocator, PhysFrame, Size4KiB};
+use x86_64::PhysAddr;
 
 pub struct BootFrameAllocator<'a>(&'a BootServices);
 

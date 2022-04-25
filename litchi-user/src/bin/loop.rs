@@ -1,10 +1,8 @@
 #![no_std]
 #![no_main]
 
-use litchi_user::{
-    println,
-    syscall::{sys_get_task_id, sys_yield},
-};
+use litchi_user::println;
+use litchi_user::syscall::{sys_get_task_id, sys_yield};
 
 #[no_mangle]
 extern "C" fn main() {

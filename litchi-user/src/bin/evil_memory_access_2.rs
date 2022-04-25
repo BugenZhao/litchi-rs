@@ -1,12 +1,14 @@
 #![no_std]
 #![no_main]
 
-// Read kernel memory by cheating the print syscall. However we format it in userspace, so this leads to page fault.
+// Read kernel memory by cheating the print syscall. However we format it in userspace, so this
+// leads to page fault.
 
 extern crate alloc;
 extern crate litchi_user;
 
 use alloc::slice;
+
 use litchi_user::println;
 
 #[no_mangle]

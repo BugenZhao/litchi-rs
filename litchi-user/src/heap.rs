@@ -2,10 +2,8 @@ use core::sync::atomic::{AtomicU64, Ordering};
 
 use linked_list_allocator::LockedHeap;
 use litchi_user_common::heap::USER_HEAP_BASE_ADDR;
-use x86_64::{
-    structures::paging::{PageSize, Size4KiB},
-    VirtAddr,
-};
+use x86_64::structures::paging::{PageSize, Size4KiB};
+use x86_64::VirtAddr;
 
 use crate::syscall::sys_extend_heap;
 

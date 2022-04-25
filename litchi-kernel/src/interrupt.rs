@@ -3,10 +3,8 @@ use core::ops::Deref;
 use lazy_static::lazy_static;
 use litchi_user_common::syscall::SYSCALL_INTERRUPT;
 use log::info;
-
-use x86_64::{
-    instructions, set_general_handler, structures::idt::InterruptDescriptorTable, PrivilegeLevel,
-};
+use x86_64::structures::idt::InterruptDescriptorTable;
+use x86_64::{instructions, set_general_handler, PrivilegeLevel};
 
 use crate::gdt::IstIndex;
 

@@ -7,6 +7,7 @@ extern crate alloc;
 extern crate litchi_user;
 
 use alloc::slice;
+
 use litchi_user::println;
 
 #[no_mangle]

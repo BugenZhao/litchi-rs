@@ -1,9 +1,12 @@
+use alloc::vec::Vec;
 use core::fmt::Debug;
 
-use alloc::vec::Vec;
 use size_format::SizeFormatterBinary;
-use uefi::table::{boot::MemoryDescriptor, cfg::ACPI2_GUID, Runtime, SystemTable};
-use x86_64::{structures::paging::PhysFrame, PhysAddr, VirtAddr};
+use uefi::table::boot::MemoryDescriptor;
+use uefi::table::cfg::ACPI2_GUID;
+use uefi::table::{Runtime, SystemTable};
+use x86_64::structures::paging::PhysFrame;
+use x86_64::{PhysAddr, VirtAddr};
 
 pub struct BootInfo {
     pub name: &'static str,

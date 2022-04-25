@@ -1,10 +1,9 @@
 use alloc::collections::VecDeque;
+
 use litchi_common::BootInfo;
 use spin::{Mutex, Once};
-use x86_64::{
-    structures::paging::{FrameAllocator, FrameDeallocator, PhysFrame, Size4KiB},
-    PhysAddr,
-};
+use x86_64::structures::paging::{FrameAllocator, FrameDeallocator, PhysFrame, Size4KiB};
+use x86_64::PhysAddr;
 
 use crate::heap;
 

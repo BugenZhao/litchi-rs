@@ -1,7 +1,5 @@
-use litchi_user_common::{
-    resource::{ResourceHandle, ResourceResult},
-    syscall::{syscall, Syscall},
-};
+use litchi_user_common::resource::{ResourceHandle, ResourceResult};
+use litchi_user_common::syscall::{syscall, Syscall};
 use x86_64::VirtAddr;
 
 pub fn sys_print(str: &str) {

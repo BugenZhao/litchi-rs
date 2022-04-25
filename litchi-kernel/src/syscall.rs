@@ -1,14 +1,12 @@
-use alloc::{borrow::ToOwned, vec};
-use litchi_user_common::{
-    resource::ResourceError,
-    syscall::{Syscall, SyscallResponse},
-};
+use alloc::borrow::ToOwned;
+use alloc::vec;
+
+use litchi_user_common::resource::ResourceError;
+use litchi_user_common::syscall::{Syscall, SyscallResponse};
 use log::warn;
 
-use crate::{
-    kernel_task, print, resource,
-    task::{with_task_manager, TaskInfo, TaskManager},
-};
+use crate::task::{with_task_manager, TaskInfo, TaskManager};
+use crate::{kernel_task, print, resource};
 
 pub fn check_syscall_legal(syscall: &Syscall) -> bool {
     fn str_addr(s: &str) -> (*const (), usize) {

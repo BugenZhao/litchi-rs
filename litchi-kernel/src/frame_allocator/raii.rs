@@ -1,9 +1,8 @@
 use alloc::vec::Vec;
+
 use log::info;
-use x86_64::{
-    instructions,
-    structures::paging::{FrameAllocator, FrameDeallocator, PhysFrame, Size4KiB},
-};
+use x86_64::instructions;
+use x86_64::structures::paging::{FrameAllocator, FrameDeallocator, PhysFrame, Size4KiB};
 
 use super::FRAME_ALLOCATOR;
 
@@ -19,7 +18,8 @@ impl RaiiFrameAllocator {
         }
     }
 
-    /// For the kernel.
+    /// For the kernel. When creating this instance, the heap and `alloc` of kernel may not be
+    /// initialized so we must not call `Vec::new()` here.
     pub fn new_untraced() -> Self {
         Self { allocated: None }
     }

@@ -2,13 +2,11 @@ use core::intrinsics::copy_nonoverlapping;
 
 use itertools::{EitherOrBoth, Itertools};
 use log::debug;
-use x86_64::{
-    structures::paging::{
-        FrameAllocator, Mapper, OffsetPageTable, Page, PageSize, PageTableFlags, PhysFrame,
-        Size4KiB, Translate,
-    },
-    VirtAddr,
+use x86_64::structures::paging::{
+    FrameAllocator, Mapper, OffsetPageTable, Page, PageSize, PageTableFlags, PhysFrame, Size4KiB,
+    Translate,
 };
+use x86_64::VirtAddr;
 use xmas_elf::{header, program, ElfFile};
 
 pub type EntryPoint = *const extern "C" fn() -> !;

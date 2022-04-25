@@ -1,10 +1,11 @@
-use core::{
-    pin::Pin,
-    sync::atomic::{AtomicU64, Ordering},
-    task::{Context, Poll, Waker},
-};
+use alloc::boxed::Box;
+use alloc::collections::BTreeMap;
+use alloc::sync::Arc;
+use alloc::task::Wake;
+use core::pin::Pin;
+use core::sync::atomic::{AtomicU64, Ordering};
+use core::task::{Context, Poll, Waker};
 
-use alloc::{boxed::Box, collections::BTreeMap, sync::Arc, task::Wake};
 use crossbeam_queue::ArrayQueue;
 use futures::Future;
 use lazy_static::lazy_static;

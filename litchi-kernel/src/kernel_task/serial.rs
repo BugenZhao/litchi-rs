@@ -1,7 +1,8 @@
 use futures_async_stream::for_await;
 use spin::Mutex;
 
-use crate::{kernel_task::broadcast, print};
+use crate::kernel_task::broadcast;
+use crate::print;
 
 lazy_static::lazy_static! {
     static ref CHANNEL: (broadcast::Sender<u8>, Mutex<Option<broadcast::Receiver<u8>>>) = {

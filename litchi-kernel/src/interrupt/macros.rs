@@ -7,8 +7,10 @@ macro_rules! define_frame_saving_handler {
         define_frame_saving_handler!(false, $handler_name, $handler_inner);
     };
 
-    ($yield: ident, $handler_name: ident, $handler_inner: ident) => {
+    ($yield: expr, $handler_name: ident, $handler_inner: ident) => {
         #[naked]
+        /// Note: With `naked`, this function is exactly a naked procedure without any abi.
+        /// The `x86-interrupt` is just for type checking of setting handler with `x86_64` crate.
         pub extern "x86-interrupt" fn $handler_name(frame: x86_64::structures::idt::InterruptStackFrame) {
             use core::arch::asm;
             use x86_64::registers::{self, segmentation::Segment};
@@ -20,13 +22,20 @@ macro_rules! define_frame_saving_handler {
                 frame.ds = registers::segmentation::DS::get_reg().0 as u64;
                 frame.es = registers::segmentation::ES::get_reg().0 as u64;
 
+                // Put the task frame back to the `Task` struct of the running task.
                 with_task_manager(|task_manager| task_manager.put_back(frame, $yield));
+                // Then run the given handler inner.
                 let _ = $handler_inner();
+                // After that, we schedule a next task to run. This function never returns.
                 schedule_and_run();
             }
 
             unsafe {
                 asm!(
+                    // The order must be consistent with [`TaskFrame`].
+                    //
+                    // I've no idea about how to saving ds & es with inline assembly...
+                    // So let's just make two placeholders and save them with Rust.
                     "mov    qword ptr [rsp - 136], 0", // Placeholder for es
                     "mov    qword ptr [rsp - 128], 0", // Placeholder for ds
                     "mov    qword ptr [rsp - 120], r15",

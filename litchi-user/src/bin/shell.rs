@@ -5,13 +5,14 @@
 
 extern crate alloc;
 
-use alloc::{string::String, vec, vec::Vec};
+use alloc::string::String;
+use alloc::vec;
+use alloc::vec::Vec;
+
 use anyhow::{anyhow, Error, Result};
-use litchi_user::{
-    print, println,
-    syscall::{sys_halt, sys_open, sys_read, sys_sleep},
-    tsc::read_tsc,
-};
+use litchi_user::syscall::{sys_halt, sys_open, sys_read, sys_sleep};
+use litchi_user::tsc::read_tsc;
+use litchi_user::{print, println};
 use litchi_user_common::resource::ResourceHandle;
 
 struct Term {

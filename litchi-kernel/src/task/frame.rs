@@ -1,14 +1,9 @@
 use core::arch::asm;
 
 use log::debug;
-use x86_64::{
-    registers::{
-        self,
-        segmentation::{Segment, SegmentSelector},
-    },
-    structures::idt::InterruptStackFrameValue,
-    PrivilegeLevel,
-};
+use x86_64::registers::segmentation::{Segment, SegmentSelector};
+use x86_64::structures::idt::InterruptStackFrameValue;
+use x86_64::{registers, PrivilegeLevel};
 
 #[repr(C)]
 #[derive(Debug, Clone, Default)]
@@ -45,7 +40,6 @@ impl TaskFrame {
     }
 
     pub unsafe fn pop(self) -> ! {
-        // Manually set ds & es here, since I don't know how to write in inline assembly :(
         registers::segmentation::DS::set_reg(SegmentSelector(self.ds as u16));
         registers::segmentation::ES::set_reg(SegmentSelector(self.es as u16));
 
