@@ -9,7 +9,7 @@ An x86-64 kernel with ~100% Rust (originally) in a week. The continuation of [Li
 Make sure the Rust toolchains and `qemu-system-x86_64` are installed, then simply execute...
 
 ```bash
-make qemu
+make qemu PROFILE=release
 ```
 
 ## Roadmap

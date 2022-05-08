@@ -111,9 +111,8 @@ fn efi_main(handle: Handle, mut system_table: SystemTable<Boot>) -> Status {
         asm!("mov rsp, {}; call {}",
             in(reg) KERNEL_STACK_TOP,
             in(reg) kernel_entry,
-            in("rdi") &boot_info as *const _
+            in("rdi") &boot_info as *const _,
+            options(noreturn)
         );
     }
-
-    Status::SUCCESS
 }
